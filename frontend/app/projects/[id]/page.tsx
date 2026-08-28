@@ -1,0 +1,216 @@
+'use client';
+
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams } from 'next/navigation';
+import ProtectedLayout from '@/components/ProtectedLayout';
+import InputForm from '@/components/InputForm';
+import ResultCards from '@/components/ResultCards';
+import CapacidadeChart from '@/components/charts/CapacidadeChart';
+import FluxoCaixaChart from '@/components/charts/FluxoCaixaChart';
+import PerfilOrdensChart from '@/components/charts/PerfilOrdensChart';
+import SensibilidadeChart from '@/components/charts/SensibilidadeChart';
+import { ConfigBESS, ConfigFinanceira } from '@/lib/inputSchema';
+import {
+  obterProjeto,
+  atualizarProjeto,
+  simularProjeto,
+  iniciarSensibilidade,
+  obterStatusSensibilidade,
+} from '@/lib/api';
+
+type StatusSensibilidade = 'idle' | 'pending' | 'running' | 'completed' | 'failed';
+
+export default function ProjetoPage() {
+  const params = useParams();
+  const projectId = params.id as string;
+
+  const [nome, setNome] = useState('');
+  const [bess, setBess] = useState<ConfigBESS | null>(null);
+  const [financeiro, setFinanceiro] = useState<ConfigFinanceira | null>(null);
+  const [carregandoProjeto, setCarregandoProjeto] = useState(true);
+  const [salvando, setSalvando] = useState(false);
+  const [simulando, setSimulando] = useState(false);
+  const [resultado, setResultado] = useState<any>(null);
+  const [erro, setErro] = useState<string | null>(null);
+
+  const [statusSensibilidade, setStatusSensibilidade] = useState<StatusSensibilidade>('idle');
+  const [progresso, setProgresso] = useState({ feito: 0, total: 105 });
+  const [curvasSensibilidade, setCurvasSensibilidade] = useState<any[] | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    obterProjeto(projectId)
+      .then((p) => {
+        setNome(p.name);
+        setBess(p.bess_config);
+        setFinanceiro(p.financeiro_config);
+      })
+      .catch((err) => setErro(err instanceof Error ? err.message : 'Erro ao carregar projeto.'))
+      .finally(() => setCarregandoProjeto(false));
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [projectId]);
+
+  async function handleSalvar() {
+    if (!bess || !financeiro) return;
+    setSalvando(true);
+    setErro(null);
+    try {
+      await atualizarProjeto(projectId, { nome, seed: 2026, bess, financeiro });
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao salvar projeto.');
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function handleSimular() {
+    setSimulando(true);
+    setErro(null);
+    setResultado(null);
+    setCurvasSensibilidade(null);
+    setStatusSensibilidade('idle');
+    try {
+      await handleSalvar(); // garante que a simulação usa o input mais recente
+      const dados = await simularProjeto(projectId);
+      setResultado(dados);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao rodar simulação.');
+    } finally {
+      setSimulando(false);
+    }
+  }
+
+  const pollJob = useCallback((jobId: string) => {
+    pollRef.current = setInterval(async () => {
+      try {
+        const status = await obterStatusSensibilidade(jobId);
+        setStatusSensibilidade(status.status);
+        setProgresso({ feito: status.progresso_feito, total: status.progresso_total });
+        if (status.status === 'completed') {
+          setCurvasSensibilidade(status.resultado);
+          if (pollRef.current) clearInterval(pollRef.current);
+        } else if (status.status === 'failed') {
+          setErro(`Falha na análise de sensibilidade: ${status.erro}`);
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      } catch (err) {
+        setErro(err instanceof Error ? err.message : 'Erro ao consultar status do job.');
+        if (pollRef.current) clearInterval(pollRef.current);
+      }
+    }, 2500);
+  }, []);
+
+  async function handleRodarSensibilidade() {
+    if (!resultado) return;
+    setErro(null);
+    setStatusSensibilidade('pending');
+    try {
+      const bidBaseline = resultado.resultado_financeiro.bid_equilibrio_rs_ano;
+      const { job_id } = await iniciarSensibilidade(projectId, bidBaseline);
+      pollJob(job_id);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao iniciar análise de sensibilidade.');
+      setStatusSensibilidade('idle');
+    }
+  }
+
+  if (carregandoProjeto || !bess || !financeiro) {
+    return (
+      <ProtectedLayout>
+        <p className="text-sm text-slate-500">Carregando projeto...</p>
+      </ProtectedLayout>
+    );
+  }
+
+  return (
+    <ProtectedLayout>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          className="rounded-md border border-slate-300 px-3 py-2 text-lg font-semibold text-slate-900 focus:border-primary focus:outline-none"
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={handleSalvar}
+            disabled={salvando}
+            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {salvando ? 'Salvando...' : 'Salvar'}
+          </button>
+          <button
+            onClick={handleSimular}
+            disabled={simulando}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {simulando ? 'Rodando simulação...' : 'Rodar simulação'}
+          </button>
+        </div>
+      </div>
+
+      {erro && <p className="mb-4 text-sm text-red-600">{erro}</p>}
+
+      <details className="mb-6 rounded-lg border border-slate-200 bg-white">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-slate-700">
+          Parâmetros de entrada (clique para expandir/recolher)
+        </summary>
+        <div className="border-t border-slate-100 p-4">
+          <InputForm bess={bess} financeiro={financeiro} onChangeBess={setBess} onChangeFinanceiro={setFinanceiro} />
+        </div>
+      </details>
+
+      {resultado && (
+        <div className="space-y-6">
+          <ResultCards
+            bidEquilibrioRsAno={resultado.resultado_financeiro.bid_equilibrio_rs_ano}
+            vplRs={resultado.resultado_financeiro.vpl_no_bid_equilibrio_rs}
+            tirPctAa={resultado.resultado_financeiro.tir_pct_aa}
+            waccPctAa={resultado.resultado_financeiro.wacc_pct_aa}
+            opexFixoCapexRsAno={resultado.resultado_financeiro.opex_fixo_capex_rs_ano}
+          />
+
+          <PerfilOrdensChart series={resultado.perfil_ordens.series} />
+          <CapacidadeChart trajetoria={resultado.trajetoria_15_anos} />
+          <FluxoCaixaChart fluxoCaixaRs={resultado.fluxo_caixa_rs} />
+
+          <div className="rounded-lg border border-slate-200 bg-white p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-800">
+                Sensibilidade contínua (Perdas, SOH+RTE, Penalidades, TUST-C, TUST-G)
+              </h3>
+              {statusSensibilidade === 'idle' && (
+                <button
+                  onClick={handleRodarSensibilidade}
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                >
+                  Rodar análise (~90s, 105 simulações)
+                </button>
+              )}
+            </div>
+
+            {(statusSensibilidade === 'pending' || statusSensibilidade === 'running') && (
+              <div className="py-8 text-center">
+                <div className="mx-auto mb-2 h-2 w-full max-w-md overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${progresso.total ? (100 * progresso.feito) / progresso.total : 0}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500">
+                  Rodando... {progresso.feito}/{progresso.total} simulações
+                </p>
+              </div>
+            )}
+
+            {statusSensibilidade === 'completed' && curvasSensibilidade && (
+              <SensibilidadeChart dados={curvasSensibilidade} />
+            )}
+          </div>
+        </div>
+      )}
+    </ProtectedLayout>
+  );
+}
