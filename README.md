@@ -27,14 +27,21 @@ usando a service role key.
    login, isso já vem ligado por padrão — desligue em **Authentication >
    Settings** se preferir login imediato sem confirmar e-mail (útil para
    testes internos).
-4. Anote 3 valores, em **Settings > API**:
+4. Anote 3 valores, em **Settings > API Keys** (nos projetos novos, a Supabase
+   já usa o sistema novo de chaves — `sb_publishable_...` e `sb_secret_...` —
+   em vez do antigo `anon`/`service_role`; funcionam do mesmo jeito):
    - **Project URL** → vai virar `SUPABASE_URL` (backend) e
      `NEXT_PUBLIC_SUPABASE_URL` (frontend)
-   - **anon public key** → vai virar `NEXT_PUBLIC_SUPABASE_ANON_KEY` (frontend)
-   - **service_role secret key** → vai virar `SUPABASE_SERVICE_ROLE_KEY`
+   - **Publishable key** (`sb_publishable_...`) → vai virar
+     `NEXT_PUBLIC_SUPABASE_ANON_KEY` (frontend — o nome da variável ficou o
+     antigo por compatibilidade com o código, mas aceita a chave nova numa boa)
+   - **Secret key** (`sb_secret_...`) → vai virar `SUPABASE_SERVICE_ROLE_KEY`
      (backend — **nunca** coloque essa chave no frontend)
-5. Em **Settings > API > JWT Settings**, copie o **JWT Secret** → vai virar
-   `SUPABASE_JWT_SECRET` (backend).
+
+   Não precisa mais copiar nenhum "JWT Secret": desde outubro/2025, projetos
+   novos da Supabase assinam os tokens de sessão com um par de chaves
+   assimétrico, e o backend valida contra a chave pública do projeto,
+   buscada automaticamente a partir da `SUPABASE_URL` (ver `app/auth.py`).
 
 ## Passo 2 — Subir o backend (Render, exemplo)
 
@@ -47,9 +54,9 @@ usando a service role key.
    configure manualmente:
    - **Build command:** `pip install -r requirements.txt`
    - **Start command:** `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-4. Em **Environment**, adicione as 4 variáveis do `.env.example`:
-   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`,
-   `FRONTEND_ORIGIN` (deixe `*` por enquanto, ajusta depois do passo 3).
+4. Em **Environment**, adicione as 3 variáveis do `.env.example`:
+   `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `FRONTEND_ORIGIN` (deixe `*`
+   por enquanto, ajusta depois do Passo 3).
 5. Depois do deploy, teste: `https://seu-backend.onrender.com/health` deve
    responder `{"status": "ok"}`. A documentação interativa da API fica em
    `https://seu-backend.onrender.com/docs`.
