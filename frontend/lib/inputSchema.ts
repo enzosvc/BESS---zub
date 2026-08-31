@@ -146,6 +146,13 @@ export const SECOES_BESS: SecaoFormulario[] = [
     ],
   },
   {
+    titulo: 'Eficiência: RTE médio e SOH de referência (por ano)',
+    campos: [
+      { chave: 'mean_rte_por_ano', rotulo: 'RTE médio por ano', ajuda: 'Fração 0-1, índice 0 = comissionamento. Independente do SOH.' },
+      { chave: 'soh_referencia_por_ano', rotulo: 'SOH de referência por ano', ajuda: 'Fração 0-1, índice 0 = comissionamento. Governa a capacidade/augmentation.' },
+    ],
+  },
+  {
     titulo: 'Janela operacional de SOC',
     campos: [
       { chave: 'soc_inicial', rotulo: 'SOC inicial', unidade: '%', step: 0.01, min: 0, max: 1 },
