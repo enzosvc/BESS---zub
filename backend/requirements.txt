@@ -4,7 +4,7 @@ pydantic==2.9.2
 numpy==2.1.1
 pandas==2.2.3
 scipy==1.14.1
-supabase==2.8.1
+supabase==2.31.0
 pyjwt==2.9.0
 cryptography==43.0.1
 python-multipart==0.0.9
