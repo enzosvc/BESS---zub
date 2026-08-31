@@ -11,6 +11,7 @@ import PerfilOrdensChart from '@/components/charts/PerfilOrdensChart';
 import SensibilidadeChart from '@/components/charts/SensibilidadeChart';
 import TabelaTecnicaAnual from '@/components/TabelaTecnicaAnual';
 import TabelaSensibilidadeBid from '@/components/TabelaSensibilidadeBid';
+import BidTirChart from '@/components/charts/BidTirChart';
 import { ConfigBESS, ConfigFinanceira } from '@/lib/inputSchema';
 import {
   obterProjeto,
@@ -181,6 +182,7 @@ export default function ProjetoPage() {
             trajetoria={resultado.trajetoria_15_anos}
             detalhamentoCustos={resultado.detalhamento_custos}
           />
+          <BidTirChart dados={resultado.sensibilidade_bid} waccPctAa={resultado.resultado_financeiro.wacc_pct_aa} />
           <TabelaSensibilidadeBid dados={resultado.sensibilidade_bid} />
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">

@@ -4,9 +4,8 @@ interface LinhaTrajetoria {
   ano: number;
   energia_liquida_poi_mwh_ano: number;
   perdas_mwh_ano: number;
-  deficit_mwh_ano: number;
-  deficit_descarga_mwh_ano: number;
-  deficit_carga_mwh_ano: number;
+  capacidade_disponivel_mwh: number;
+  capacidade_liquida_poi_mwh: number;
   custo_augmentation_rs: number;
 }
 
@@ -42,9 +41,9 @@ export default function TabelaTecnicaAnual({
               <th className="py-2 pr-3">Ano</th>
               <th className="py-2 pr-3">Energia líquida POI (MWh)</th>
               <th className="py-2 pr-3">Perdas (MWh)</th>
-              <th className="py-2 pr-3">Déficit total (MWh)</th>
-              <th className="py-2 pr-3">Déficit descarga (MWh)</th>
-              <th className="py-2 pr-3">Déficit carga (MWh)</th>
+              <th className="py-2 pr-3">Capacidade disponível (MWh)</th>
+              <th className="py-2 pr-3">Capacidade líquida POI (MWh)</th>
+              <th className="py-2 pr-3">Potência líquida POI (MW)</th>
               <th className="py-2 pr-3">Custo augmentation (R$)</th>
               <th className="py-2 pr-3">Custo não atendimento (R$)</th>
             </tr>
@@ -55,9 +54,9 @@ export default function TabelaTecnicaAnual({
                 <td className="py-1.5 pr-3 font-medium">{r.ano}</td>
                 <td className="py-1.5 pr-3">{formatarNumero(r.energia_liquida_poi_mwh_ano)}</td>
                 <td className="py-1.5 pr-3">{formatarNumero(r.perdas_mwh_ano)}</td>
-                <td className="py-1.5 pr-3">{formatarNumero(r.deficit_mwh_ano)}</td>
-                <td className="py-1.5 pr-3">{formatarNumero(r.deficit_descarga_mwh_ano)}</td>
-                <td className="py-1.5 pr-3">{formatarNumero(r.deficit_carga_mwh_ano)}</td>
+                <td className="py-1.5 pr-3">{formatarNumero(r.capacidade_disponivel_mwh)}</td>
+                <td className="py-1.5 pr-3">{formatarNumero(r.capacidade_liquida_poi_mwh)}</td>
+                <td className="py-1.5 pr-3">{formatarNumero(r.capacidade_liquida_poi_mwh / 4)}</td>
                 <td className="py-1.5 pr-3">{formatarReais(r.custo_augmentation_rs)}</td>
                 <td className="py-1.5 pr-3">{formatarReais(custoNaoAtendimentoPorAno.get(r.ano) ?? 0)}</td>
               </tr>
