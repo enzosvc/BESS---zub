@@ -98,3 +98,24 @@ def resolver_bid_equilibrio(trajetoria: pd.DataFrame, fin: ConfigFinanceiraDetal
         lambda bid: calcular_vpl_detalhado(bid, trajetoria, fin),
         a=0.0, b=limite_superior_busca
     ))
+
+
+def calcular_sensibilidade_bid(trajetoria: pd.DataFrame, fin: ConfigFinanceiraDetalhada,
+                                bid_equilibrio: float, n_pontos: int = 13,
+                                faixa_min: float = 0.85, faixa_max: float = 1.15) -> list[dict]:
+    """Tabela 'BID testado x VPL x TIR' (a mesma do notebook, Bloco 8.1): varia
+    o BID contratado de 85% a 115% do BID de equilíbrio e mostra o VPL e a TIR
+    resultantes para cada um. Barato — reaproveita a MESMA trajetória de 15
+    anos já calculada, só resolve VPL/TIR de novo pra cada BID testado (nada
+    de rodar a simulação inteira outra vez, ao contrário do Bloco 8.2)."""
+    linhas = []
+    for fracao in np.linspace(faixa_min, faixa_max, n_pontos):
+        bid_testado = float(bid_equilibrio * fracao)
+        fluxo_teste = montar_fluxo_caixa_detalhado(bid_testado, trajetoria, fin)
+        linhas.append({
+            'bid_testado_rs_ano': bid_testado,
+            'bid_sobre_equilibrio': float(fracao),
+            'vpl_rs': calcular_vpl_detalhado(bid_testado, trajetoria, fin),
+            'tir_pct_aa': 100 * calcular_tir(fluxo_teste),
+        })
+    return linhas

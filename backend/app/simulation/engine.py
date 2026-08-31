@@ -22,6 +22,7 @@ from .financial import (
     calcular_vpl_detalhado,
     calcular_tir,
     resolver_bid_equilibrio,
+    calcular_sensibilidade_bid,
 )
 
 
@@ -61,6 +62,9 @@ def rodar_simulacao_completa(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraDeta
     vpl = calcular_vpl_detalhado(bid_equilibrio, trajetoria, fin)
     tir = calcular_tir(fluxo_caixa)
 
+    # Bloco 8.1: sensibilidade do BID testado (85%-115% do equilíbrio) x VPL x TIR
+    sensibilidade_bid = calcular_sensibilidade_bid(trajetoria, fin, bid_equilibrio)
+
     # perfil de ordens: resumo (não devolvemos os 2880 pontos crus por padrão,
     # só o suficiente pra plotar o perfil de 30 dias no frontend)
     ordens_resumo = ordens[['data_hora', 'potencia_solicitada_mw', 'tipo_evento', 'ciclo_id']].copy()
@@ -81,6 +85,7 @@ def rodar_simulacao_completa(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraDeta
         'trajetoria_15_anos': _df_para_records(trajetoria),
         'detalhamento_custos': detalhamento,
         'fluxo_caixa_rs': fluxo_caixa.tolist(),
+        'sensibilidade_bid': sensibilidade_bid,
         'resultado_financeiro': {
             'bid_equilibrio_rs_ano': bid_equilibrio,
             'vpl_no_bid_equilibrio_rs': vpl,

@@ -9,6 +9,8 @@ import CapacidadeChart from '@/components/charts/CapacidadeChart';
 import FluxoCaixaChart from '@/components/charts/FluxoCaixaChart';
 import PerfilOrdensChart from '@/components/charts/PerfilOrdensChart';
 import SensibilidadeChart from '@/components/charts/SensibilidadeChart';
+import TabelaTecnicaAnual from '@/components/TabelaTecnicaAnual';
+import TabelaSensibilidadeBid from '@/components/TabelaSensibilidadeBid';
 import { ConfigBESS, ConfigFinanceira } from '@/lib/inputSchema';
 import {
   obterProjeto,
@@ -175,6 +177,11 @@ export default function ProjetoPage() {
           <PerfilOrdensChart series={resultado.perfil_ordens.series} />
           <CapacidadeChart trajetoria={resultado.trajetoria_15_anos} />
           <FluxoCaixaChart fluxoCaixaRs={resultado.fluxo_caixa_rs} />
+          <TabelaTecnicaAnual
+            trajetoria={resultado.trajetoria_15_anos}
+            detalhamentoCustos={resultado.detalhamento_custos}
+          />
+          <TabelaSensibilidadeBid dados={resultado.sensibilidade_bid} />
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">
             <div className="mb-3 flex items-center justify-between">
