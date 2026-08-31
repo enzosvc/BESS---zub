@@ -92,6 +92,34 @@ class ConfigFinanceiraDetalhada:
     opex_fixo_capex_rs_ano: float = 0.0
 
 
+def validar_curvas_vs_prazo(cfg: ConfigBESSDetalhado) -> None:
+    """As curvas mean_rte_por_ano e soh_referencia_por_ano são indexadas por
+    `ano` (1..prazo_anos), com o índice 0 reservado pro comissionamento — ou
+    seja, cada uma precisa ter pelo menos `prazo_anos + 1` elementos.
+
+    Ter MAIS elementos que o necessário não é problema (os extras ficam sem
+    uso, se você reduzir o prazo). Ter MENOS é: sem essa validação, o acesso
+    ao índice fora do array ou quebra com IndexError, ou (dependendo de onde
+    é lido) reusa silenciosamente o último valor da curva pros anos que
+    faltam — o que dá um resultado financeiro enganoso sem avisar ninguém.
+    Por isso validamos aqui, na entrada, com uma mensagem explícita.
+    """
+    minimo_necessario = cfg.prazo_anos + 1
+
+    if len(cfg.mean_rte_por_ano) < minimo_necessario:
+        raise ValueError(
+            f"mean_rte_por_ano tem {len(cfg.mean_rte_por_ano)} elementos, mas o prazo de "
+            f"{cfg.prazo_anos} anos precisa de pelo menos {minimo_necessario} "
+            f"(índice 0 = comissionamento + 1 valor por ano do contrato)."
+        )
+    if len(cfg.soh_referencia_por_ano) < minimo_necessario:
+        raise ValueError(
+            f"soh_referencia_por_ano tem {len(cfg.soh_referencia_por_ano)} elementos, mas o prazo de "
+            f"{cfg.prazo_anos} anos precisa de pelo menos {minimo_necessario} "
+            f"(índice 0 = comissionamento + 1 valor por ano do contrato)."
+        )
+
+
 def construir_config_default() -> tuple[ConfigBESSDetalhado, ConfigFinanceiraDetalhada]:
     """Valores-padrão (os mesmos do notebook), usados só para testes locais.
     Em produção, cfg/fin vêm sempre do payload de input do usuário."""

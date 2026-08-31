@@ -32,8 +32,11 @@ def simular_15_anos(ordens: pd.DataFrame, cfg: ConfigBESSDetalhado,
             ano, [1, cfg.prazo_anos], [cfg.disponibilidade_ano1_pct, cfg.disponibilidade_ano15_pct]
         )
 
-        # 6) SOH do ano: direto da tabela de referência (mesmo índice usado em eficiencia_base_do_ano)
-        soh_referencia_ano = cfg.soh_referencia_por_ano[ano]
+        # 6) SOH do ano: direto da tabela de referência (mesmo índice usado em eficiencia_base_do_ano).
+        # Protegido com clip por defesa extra — a validação em validar_curvas_vs_prazo() já garante
+        # que isso não deveria disparar, mas mantemos os dois pontos de leitura simétricos.
+        indice_soh = min(ano, len(cfg.soh_referencia_por_ano) - 1)
+        soh_referencia_ano = cfg.soh_referencia_por_ano[indice_soh]
         capacidade_disponivel = soh_referencia_ano * cfg.capacidade_nominal_mwh + capacidade_extra_acumulada
         soh_efetivo = capacidade_disponivel / cfg.capacidade_nominal_mwh
 

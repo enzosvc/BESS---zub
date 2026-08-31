@@ -107,6 +107,16 @@ def _buscar_projeto_do_usuario(project_id: str, user_id: str) -> dict:
     return projeto
 
 
+def _rodar_simulacao_ou_erro_400(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraDetalhada, seed: int) -> dict:
+    """Roda a simulação, convertendo erros de validação de input (ex.: curvas
+    de RTE/SOH mais curtas que o prazo do contrato) em HTTP 400 — com a
+    mensagem exata do erro — em vez de um 500 genérico."""
+    try:
+        return rodar_simulacao_completa(cfg, fin, seed=seed)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+
 # ---------------------------------------------------------------------------
 # Simulação síncrona (rápida — roda direto na requisição, ~1-2s)
 # ---------------------------------------------------------------------------
@@ -115,8 +125,7 @@ def _buscar_projeto_do_usuario(project_id: str, user_id: str) -> dict:
 def simular(payload: SimulacaoInput, user_id: str = Depends(obter_usuario_atual)):
     cfg = _para_cfg_bess(payload.bess)
     fin = _para_fin(payload.financeiro, cfg.capacidade_nominal_mwh)
-    resultado = rodar_simulacao_completa(cfg, fin, seed=payload.seed)
-    return resultado
+    return _rodar_simulacao_ou_erro_400(cfg, fin, payload.seed)
 
 
 @router.post("/projects/{project_id}/simulate")
@@ -129,7 +138,7 @@ def simular_projeto_salvo(project_id: str, background_tasks: BackgroundTasks,
 
     cfg = _para_cfg_bess(cfg_input)
     fin = _para_fin(fin_input, cfg.capacidade_nominal_mwh)
-    resultado = rodar_simulacao_completa(cfg, fin, seed=projeto["seed"])
+    resultado = _rodar_simulacao_ou_erro_400(cfg, fin, projeto["seed"])
 
     supabase = get_supabase()
     registro = {
@@ -160,7 +169,7 @@ def iniciar_sensibilidade(project_id: str, background_tasks: BackgroundTasks,
     fin = _para_fin(fin_input, cfg.capacidade_nominal_mwh)
 
     if bid_equilibrio_rs_ano is None:
-        resultado_base = rodar_simulacao_completa(cfg, fin, seed=projeto["seed"])
+        resultado_base = _rodar_simulacao_ou_erro_400(cfg, fin, projeto["seed"])
         bid_equilibrio_rs_ano = resultado_base["resultado_financeiro"]["bid_equilibrio_rs_ano"]
 
     supabase = get_supabase()

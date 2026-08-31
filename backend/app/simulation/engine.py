@@ -11,7 +11,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-from .config import ConfigBESSDetalhado, ConfigFinanceiraDetalhada
+from .config import ConfigBESSDetalhado, ConfigFinanceiraDetalhada, validar_curvas_vs_prazo
 from .orders import criar_ordens_sinteticas
 from .lifecycle import simular_15_anos
 from .financial import (
@@ -35,6 +35,8 @@ def rodar_simulacao_completa(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraDeta
                               seed: int = 2026) -> dict:
     """Roda o pipeline inteiro (equivalente aos Blocos 3, 6, 7 e 8 do notebook)
     e devolve um dicionário JSON-serializável com todos os resultados."""
+
+    validar_curvas_vs_prazo(cfg)
 
     # Bloco 3: perfil sintético de ordens
     ordens = criar_ordens_sinteticas(cfg, seed=seed)
