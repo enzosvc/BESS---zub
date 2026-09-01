@@ -32,6 +32,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
             BESS Modelagem
           </Link>
           <div className="flex items-center gap-4 text-sm text-slate-500">
+            <Link href="/admin" className="text-slate-500 hover:text-primary">
+              Atalhos
+            </Link>
             <span>{usuario?.email}</span>
             <button onClick={sair} className="text-primary hover:underline">
               Sair
