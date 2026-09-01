@@ -22,6 +22,7 @@ export interface ConfigBESS {
   eficiencia_transformador_media_pct: number;
   perda_cabo_trafo_media_alta_pct: number;
   perda_cabo_alta_tensao_pct: number;
+  eficiencia_transformador_alta_pct: number;
   consumo_auxiliares_mw: number;
   disponibilidade_ano1_pct: number;
   disponibilidade_ano15_pct: number;
@@ -86,6 +87,7 @@ export const CONFIG_BESS_DEFAULT: ConfigBESS = {
   eficiencia_transformador_media_pct: 0.992,
   perda_cabo_trafo_media_alta_pct: 0.0,
   perda_cabo_alta_tensao_pct: 0.025,
+  eficiencia_transformador_alta_pct: 0.99,
   consumo_auxiliares_mw: 0.49448,
   disponibilidade_ano1_pct: 0.98,
   disponibilidade_ano15_pct: 0.96,
@@ -184,6 +186,7 @@ export const SECOES_BESS: SecaoFormulario[] = [
       { chave: 'eficiencia_transformador_media_pct', rotulo: 'Eficiência do transformador', unidade: '%', step: 0.001, min: 0, max: 1 },
       { chave: 'perda_cabo_trafo_media_alta_pct', rotulo: 'Perda cabo trafo média-alta', unidade: '%', step: 0.001, min: 0, max: 1 },
       { chave: 'perda_cabo_alta_tensao_pct', rotulo: 'Perda cabo alta tensão', unidade: '%', step: 0.001, min: 0, max: 1 },
+      { chave: 'eficiencia_transformador_alta_pct', rotulo: 'Eficiência transformador de alta', unidade: '%', step: 0.001, min: 0, max: 1 },
       { chave: 'consumo_auxiliares_mw', rotulo: 'Consumo de auxiliares', unidade: 'MW', step: 0.001 },
     ],
   },

@@ -29,8 +29,13 @@ create table if not exists public.simulation_results (
     id uuid primary key default gen_random_uuid(),
     project_id uuid not null references public.projects(id) on delete cascade,
     result jsonb not null,
+    model_version text,
     created_at timestamptz not null default now()
 );
+
+-- migração idempotente: garante a coluna mesmo se a tabela já existir de antes
+-- (rode este bloco de novo no SQL Editor se você já criou as tabelas anteriormente)
+alter table public.simulation_results add column if not exists model_version text;
 
 create index if not exists idx_simulation_results_project_id on public.simulation_results(project_id);
 

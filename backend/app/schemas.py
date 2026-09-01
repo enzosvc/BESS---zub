@@ -50,6 +50,7 @@ class ConfigBESSInput(BaseModel):
     eficiencia_transformador_media_pct: float = Field(0.992, gt=0, le=1)
     perda_cabo_trafo_media_alta_pct: float = Field(0.0, ge=0, le=1)
     perda_cabo_alta_tensao_pct: float = Field(0.025, ge=0, le=1)
+    eficiencia_transformador_alta_pct: float = Field(0.99, gt=0, le=1)
     consumo_auxiliares_mw: float = Field(0.49448, ge=0)
 
     # --- disponibilidade ---

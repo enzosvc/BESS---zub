@@ -167,6 +167,9 @@ export default function ProjetoPage() {
 
       {resultado && (
         <div className="space-y-6">
+          <p className="text-right text-xs text-slate-400">
+            Modelo: <span className="font-mono">{resultado.versao_modelo}</span>
+          </p>
           <ResultCards
             bidEquilibrioRsAno={resultado.resultado_financeiro.bid_equilibrio_rs_ano}
             vplRs={resultado.resultado_financeiro.vpl_no_bid_equilibrio_rs}

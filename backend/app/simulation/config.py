@@ -45,6 +45,7 @@ class ConfigBESSDetalhado:
     eficiencia_transformador_media_pct: float
     perda_cabo_trafo_media_alta_pct: float
     perda_cabo_alta_tensao_pct: float
+    eficiencia_transformador_alta_pct: float
     consumo_auxiliares_mw: float
 
     # --- disponibilidade ---
@@ -153,6 +154,7 @@ def construir_config_default() -> tuple[ConfigBESSDetalhado, ConfigFinanceiraDet
         eficiencia_transformador_media_pct=0.992,
         perda_cabo_trafo_media_alta_pct=0.0,
         perda_cabo_alta_tensao_pct=0.025,
+        eficiencia_transformador_alta_pct=0.99,
         consumo_auxiliares_mw=0.49448,
         disponibilidade_ano1_pct=0.98,
         disponibilidade_ano15_pct=0.96,

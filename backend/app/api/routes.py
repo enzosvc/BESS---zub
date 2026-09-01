@@ -145,6 +145,7 @@ def simular_projeto_salvo(project_id: str, background_tasks: BackgroundTasks,
         "id": str(uuid.uuid4()),
         "project_id": project_id,
         "result": resultado,
+        "model_version": resultado.get("versao_modelo"),
     }
     supabase.table("simulation_results").insert(registro).execute()
     return resultado

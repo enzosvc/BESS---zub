@@ -12,13 +12,15 @@ from .config import ConfigBESSDetalhado
 
 
 def calcular_fator_conversao(cfg: ConfigBESSDetalhado) -> float:
-    """Cadeia: cabo DC-AC -> PCS -> cabo trafo média-alta -> trafo média -> cabo alta tensão."""
+    """Cadeia: cabo DC-AC -> PCS -> cabo trafo média-alta -> trafo média ->
+    cabo alta tensão -> trafo de alta -> POI."""
     return (
         (1 - cfg.perda_cabo_dc_ac_pct)
         * cfg.eficiencia_pcs
         * (1 - cfg.perda_cabo_trafo_media_alta_pct)
         * cfg.eficiencia_transformador_media_pct
         * (1 - cfg.perda_cabo_alta_tensao_pct)
+        * cfg.eficiencia_transformador_alta_pct
     )
 
 

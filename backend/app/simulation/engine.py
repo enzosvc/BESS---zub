@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from .config import ConfigBESSDetalhado, ConfigFinanceiraDetalhada, validar_curvas_vs_prazo
+from ..version import obter_versao_modelo
 from .orders import criar_ordens_sinteticas
 from .lifecycle import simular_15_anos
 from .financial import (
@@ -71,6 +72,7 @@ def rodar_simulacao_completa(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraDeta
     ordens_resumo['data_hora'] = ordens_resumo['data_hora'].astype(str)
 
     return {
+        'versao_modelo': obter_versao_modelo(),
         'entrada': {
             'cfg': cfg.__dict__,
             'fin': fin.__dict__,
