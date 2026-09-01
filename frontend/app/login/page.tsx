@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
@@ -40,8 +41,10 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-xl font-semibold text-slate-900">BESS Modelagem</h1>
-        <p className="mb-6 text-sm text-slate-500">
+        <div className="mb-4 flex justify-center rounded-lg bg-primary py-4">
+          <Image src="/logo-zub.png" alt="ZUB" width={120} height={65} priority />
+        </div>
+        <p className="mb-6 text-center text-sm text-slate-500">
           Ferramenta de modelagem técnico-financeira de sistemas de armazenamento em bateria.
         </p>
 

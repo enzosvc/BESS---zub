@@ -7,7 +7,8 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#1e3a8a',
+        primary: '#12183C',   // navy da marca ZUB
+        accent: '#47D73D',    // verde da marca ZUB
       },
     },
   },
