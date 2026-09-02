@@ -152,4 +152,10 @@ def simular_ano_detalhado(ordens: pd.DataFrame, cfg: ConfigBESSDetalhado,
         'deficit_carga_mwh_ano': deficit_carga_mwh * fator_anualizacao,
         'soc_serie_amostra': soc_serie.tolist(),
         'disponibilidade_media_realizada': float(fator_disp_por_dia.mean()),
+        # --- campos adicionais, usados pelo motor de arbitragem (simulation/*_arbitragem.py) ---
+        # Série completa de potência entregue/absorvida no POI, no MESMO índice/ordem de
+        # `ordens` — permite multiplicar elemento a elemento por uma série de preço horário
+        # alinhada e obter receita/custo real por timestep. Ignorada pelo fluxo LRCAP
+        # (engine.py/lifecycle.py) — chave nova, não quebra nenhum consumidor existente.
+        'pot_poi_entregue_mw_serie': pot_poi_entregue,
     }
