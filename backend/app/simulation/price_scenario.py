@@ -43,10 +43,13 @@ def construir_precos_por_ano(precos_por_ano_raw: Dict[str, List[float]],
     precos_por_ano_raw: como vem do banco — chaves string ("1", "2", ...),
     valores = lista de preços horários (8760 ou 8784 números).
 
-    Se o cenário tiver MENOS anos que `prazo_anos`, cicla os anos disponíveis
-    (na ordem em que foram enviados) para completar o prazo — mesma lógica do
-    teste de validação do motor. Se tiver MAIS, usa só os `prazo_anos`
-    primeiros, na ordem das chaves numéricas.
+    NÃO cicla mais o cenário para preencher `prazo_anos`. O horizonte efetivo
+    da análise é `min(prazo_anos, anos disponíveis no cenário)` — se o cenário
+    tiver menos anos que o prazo do contrato, a análise para no último ano com
+    dado de preço real, em vez de repetir anos artificialmente. Quem decide o
+    prazo_anos EFETIVO a partir do tamanho do dict retornado é
+    `engine_arbitragem.rodar_simulacao_arbitragem` (ver `horizonte_efetivo_anos`
+    no resultado da simulação).
     """
     if not precos_por_ano_raw:
         raise CenarioPrecoInvalido("Cenário de preço vazio — nenhum ano informado.")
@@ -55,11 +58,10 @@ def construir_precos_por_ano(precos_por_ano_raw: Dict[str, List[float]],
     for chave in anos_ordenados:
         validar_lista_precos_ano(precos_por_ano_raw[chave], chave)
 
-    n_anos_disponiveis = len(anos_ordenados)
+    anos_usados = anos_ordenados[:prazo_anos]  # trunca; nunca cicla
 
     resultado: Dict[int, pd.DataFrame] = {}
-    for ano_simulado in range(1, prazo_anos + 1):
-        chave_origem = anos_ordenados[(ano_simulado - 1) % n_anos_disponiveis]
+    for ano_simulado, chave_origem in enumerate(anos_usados, start=1):
         precos = precos_por_ano_raw[chave_origem]
         indice = pd.date_range('2000-01-01', periods=len(precos), freq='h')
         resultado[ano_simulado] = pd.DataFrame({

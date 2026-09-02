@@ -123,6 +123,16 @@ export default function ProjetoArbitragemView({
           <p className="text-right text-xs text-muted-2">
             Modelo: <span className="font-mono">{resultado.versao_modelo}</span>
           </p>
+
+          {resultado.horizonte_truncado && (
+            <div className="rounded-lg border border-warn/40 bg-panel-2 p-3 text-sm text-warn">
+              Análise limitada a <strong>{resultado.horizonte_efetivo_anos} ano(s)</strong> — o cenário de
+              preço selecionado não tem dados para os {resultado.prazo_anos_solicitado} anos do prazo do
+              contrato. VPL, TIR e fluxo de caixa refletem só esse período mais curto, sem repetir ou
+              extrapolar anos de preço.
+            </div>
+          )}
+
           <ResultCardsArbitragem
             vplRs={resultado.resultado_financeiro.vpl_rs}
             tirPctAa={resultado.resultado_financeiro.tir_pct_aa}

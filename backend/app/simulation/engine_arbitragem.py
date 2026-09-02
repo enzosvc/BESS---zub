@@ -12,6 +12,7 @@ novo com inputs diferentes; não há um job assíncrono dedicado nesta v1).
 """
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Dict
 
 import numpy as np
@@ -41,12 +42,17 @@ def rodar_simulacao_arbitragem(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraAr
                                 cenario_precos_por_ano: Dict[int, pd.DataFrame],
                                 seed: int = 2026) -> dict:
     """
-    cenario_precos_por_ano: {1: df_precos_ano1, ..., cfg.prazo_anos: df_precos_anoN},
-    cada df com colunas ['data_hora', 'preco_rs_mwh'] cobrindo um ano calendário
-    completo em resolução horária (ver orders_arbitragem.criar_ordens_arbitragem).
-    """
-    validar_curvas_vs_prazo(cfg)
+    cenario_precos_por_ano: {1: df_precos_ano1, ..., N: df_precos_anoN}, cada df
+    com colunas ['data_hora', 'preco_rs_mwh'] cobrindo um ano calendário completo
+    em resolução horária (ver orders_arbitragem.criar_ordens_arbitragem).
 
+    O horizonte EFETIVO da análise é `min(cfg.prazo_anos, len(cenario_precos_por_ano))`
+    — a análise nunca vai além do prazo do contrato NEM além do último ano com
+    dado de preço real disponível no cenário. Se o cenário tiver menos anos que
+    o contrato, `cfg`/`fin` são truncados para esse horizonte menor antes de
+    rodar o resto do pipeline (SOH, augmentation, fluxo de caixa, VPL/TIR) —
+    não há extrapolação nem repetição de anos.
+    """
     if cfg.dias_simulados_por_ano != 365:
         raise ValueError(
             "Para o modelo de arbitragem, construa cfg com dias_simulados_por_ano=365 "
@@ -54,9 +60,25 @@ def rodar_simulacao_arbitragem(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraAr
             "de um período representativo menor)."
         )
 
+    prazo_anos_solicitado = cfg.prazo_anos
+    horizonte_efetivo_anos = min(cfg.prazo_anos, len(cenario_precos_por_ano))
+    if horizonte_efetivo_anos < 1:
+        raise ValueError("Cenário de preço sem nenhum ano utilizável.")
+
+    horizonte_truncado = horizonte_efetivo_anos < prazo_anos_solicitado
+    if horizonte_truncado:
+        # cfg/fin são frozen — validar_curvas_vs_prazo já garantiu que as curvas de
+        # RTE/SOH têm elementos suficientes para prazo_anos_solicitado, logo também
+        # têm para o horizonte (menor) efetivo; nenhuma validação extra é necessária.
+        cfg = replace(cfg, prazo_anos=horizonte_efetivo_anos)
+        fin = replace(fin, prazo_anos=horizonte_efetivo_anos)
+
+    validar_curvas_vs_prazo(cfg)
+
+    anos_usados = sorted(cenario_precos_por_ano.keys())[:horizonte_efetivo_anos]
     ordens_por_ano = {
-        ano: criar_ordens_arbitragem(cfg, precos_ano)
-        for ano, precos_ano in cenario_precos_por_ano.items()
+        ano_simulado: criar_ordens_arbitragem(cfg, cenario_precos_por_ano[ano_origem])
+        for ano_simulado, ano_origem in enumerate(anos_usados, start=1)
     }
 
     trajetoria = simular_15_anos_arbitragem(ordens_por_ano, cfg, fin, seed=seed)
@@ -74,7 +96,7 @@ def rodar_simulacao_arbitragem(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraAr
     duracao_h = int(round(1 / cfg.c_rate))
 
     # perfil de despacho: resumo dos primeiros 30 dias do ano 1, só para plotar no frontend
-    # (evita devolver os 8760 pontos/ano x 15 anos por padrão)
+    # (evita devolver os 8760 pontos/ano x N anos por padrão)
     ordens_ano1 = ordens_por_ano[1]
     resumo_dias = sorted(ordens_ano1['dia'].unique())[:30]
     ordens_resumo = ordens_ano1[ordens_ano1['dia'].isin(resumo_dias)][
@@ -85,6 +107,9 @@ def rodar_simulacao_arbitragem(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraAr
     return sanear_json({
         'versao_modelo': obter_versao_modelo(),
         'modelo_negocio': 'arbitragem_fv_bess' if fin.fv_acoplado else 'arbitragem_standalone',
+        'horizonte_efetivo_anos': horizonte_efetivo_anos,
+        'prazo_anos_solicitado': prazo_anos_solicitado,
+        'horizonte_truncado': horizonte_truncado,
         'entrada': {
             'cfg': cfg.__dict__,
             'fin': fin.__dict__,
