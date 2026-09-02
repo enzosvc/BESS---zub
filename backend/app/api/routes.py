@@ -16,12 +16,20 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from ..auth import obter_usuario_atual
 from ..db import get_supabase
-from ..schemas import ConfigBESSInput, ConfigFinanceiraInput, SimulacaoInput
+from ..schemas import (
+    ConfigBESSInput, ConfigFinanceiraInput, SimulacaoInput,
+    ConfigFinanceiraArbitragemInput, SimulacaoArbitragemInput, PriceScenarioInput,
+)
 from ..simulation.config import ConfigBESSDetalhado, ConfigFinanceiraDetalhada
 from ..simulation.engine import rodar_simulacao_completa
+from ..simulation.financial_arbitragem import ConfigFinanceiraArbitragem
+from ..simulation.engine_arbitragem import rodar_simulacao_arbitragem
+from ..simulation.price_scenario import construir_precos_por_ano, resumo_cenario, CenarioPrecoInvalido
 from ..jobs.sensitivity_worker import rodar_job_sensibilidade
 
 router = APIRouter(prefix="/api")
+
+BUSINESS_MODELS_ARBITRAGEM = ("arbitragem_standalone", "arbitragem_fv_bess")
 
 
 # ---------------------------------------------------------------------------
@@ -43,6 +51,12 @@ def _para_fin(input_fin: ConfigFinanceiraInput, capacidade_nominal_mwh: float) -
     return ConfigFinanceiraDetalhada(**dados)
 
 
+def _para_fin_arbitragem(input_fin: ConfigFinanceiraArbitragemInput, prazo_anos: int) -> ConfigFinanceiraArbitragem:
+    dados = input_fin.model_dump()
+    dados["prazo_anos"] = prazo_anos
+    return ConfigFinanceiraArbitragem(**dados)
+
+
 # ---------------------------------------------------------------------------
 # Projetos (CRUD, sempre escopado ao usuário logado)
 # ---------------------------------------------------------------------------
@@ -56,14 +70,38 @@ def listar_projetos(user_id: str = Depends(obter_usuario_atual)):
 
 @router.post("/projects", status_code=status.HTTP_201_CREATED)
 def criar_projeto(payload: SimulacaoInput, user_id: str = Depends(obter_usuario_atual)):
+    """Cria um projeto do modelo LRCAP. Para arbitragem, ver POST /api/projects/arbitragem."""
     supabase = get_supabase()
     registro = {
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "name": payload.nome or "Novo projeto",
         "seed": payload.seed,
+        "business_model": "lrcap",
         "bess_config": payload.bess.model_dump(),
         "financeiro_config": payload.financeiro.model_dump(),
+    }
+    resp = supabase.table("projects").insert(registro).execute()
+    return resp.data[0]
+
+
+@router.post("/projects/arbitragem", status_code=status.HTTP_201_CREATED)
+def criar_projeto_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = Depends(obter_usuario_atual)):
+    """Cria um projeto do modelo de arbitragem (standalone ou FV+BESS, conforme
+    `payload.financeiro.fv_acoplado`). Requer um price_scenario_id já existente
+    — ver POST /api/price-scenarios."""
+    _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)  # 404/403 se não existir/não for do dono
+
+    supabase = get_supabase()
+    registro = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "name": payload.nome or "Novo projeto de arbitragem",
+        "seed": payload.seed,
+        "business_model": "arbitragem_fv_bess" if payload.financeiro.fv_acoplado else "arbitragem_standalone",
+        "bess_config": payload.bess.model_dump(),
+        "financeiro_config": payload.financeiro.model_dump(),
+        "price_scenario_id": payload.price_scenario_id,
     }
     resp = supabase.table("projects").insert(registro).execute()
     return resp.data[0]
@@ -77,13 +115,42 @@ def obter_projeto(project_id: str, user_id: str = Depends(obter_usuario_atual)):
 
 @router.put("/projects/{project_id}")
 def atualizar_projeto(project_id: str, payload: SimulacaoInput, user_id: str = Depends(obter_usuario_atual)):
-    _buscar_projeto_do_usuario(project_id, user_id)  # 404/403 se não for dono
+    projeto = _buscar_projeto_do_usuario(project_id, user_id)  # 404/403 se não for dono
+    if projeto["business_model"] != "lrcap":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Esse projeto é de arbitragem — use PUT /api/projects/{project_id}/arbitragem.",
+        )
     supabase = get_supabase()
     resp = supabase.table("projects").update({
         "name": payload.nome or "Projeto sem nome",
         "seed": payload.seed,
         "bess_config": payload.bess.model_dump(),
         "financeiro_config": payload.financeiro.model_dump(),
+        "updated_at": "now()",
+    }).eq("id", project_id).execute()
+    return resp.data[0]
+
+
+@router.put("/projects/{project_id}/arbitragem")
+def atualizar_projeto_arbitragem(project_id: str, payload: SimulacaoArbitragemInput,
+                                  user_id: str = Depends(obter_usuario_atual)):
+    projeto = _buscar_projeto_do_usuario(project_id, user_id)
+    if projeto["business_model"] not in BUSINESS_MODELS_ARBITRAGEM:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Esse projeto é LRCAP — use PUT /api/projects/{project_id}.",
+        )
+    _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)
+
+    supabase = get_supabase()
+    resp = supabase.table("projects").update({
+        "name": payload.nome or "Projeto sem nome",
+        "seed": payload.seed,
+        "business_model": "arbitragem_fv_bess" if payload.financeiro.fv_acoplado else "arbitragem_standalone",
+        "bess_config": payload.bess.model_dump(),
+        "financeiro_config": payload.financeiro.model_dump(),
+        "price_scenario_id": payload.price_scenario_id,
         "updated_at": "now()",
     }).eq("id", project_id).execute()
     return resp.data[0]
@@ -118,6 +185,89 @@ def _rodar_simulacao_ou_erro_400(cfg: ConfigBESSDetalhado, fin: ConfigFinanceira
 
 
 # ---------------------------------------------------------------------------
+# Cenários de preço (usados pelos modelos de arbitragem)
+# ---------------------------------------------------------------------------
+
+@router.post("/price-scenarios", status_code=status.HTTP_201_CREATED)
+def criar_price_scenario(payload: PriceScenarioInput, user_id: str = Depends(obter_usuario_atual)):
+    precos_por_ano_raw = {str(item.ano): item.precos_rs_mwh for item in payload.anos}
+    supabase = get_supabase()
+    registro = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "name": payload.name,
+        "submercado": payload.submercado,
+        "fonte": payload.fonte,
+        "precos_por_ano": precos_por_ano_raw,
+    }
+    resp = supabase.table("price_scenarios").insert(registro).execute()
+    salvo = resp.data[0]
+    return {**salvo, "resumo": resumo_cenario(precos_por_ano_raw)}
+
+
+@router.get("/price-scenarios")
+def listar_price_scenarios(user_id: str = Depends(obter_usuario_atual)):
+    """Lista os cenários do usuário SEM o array de preços (só metadados +
+    resumo) — o payload completo de um cenário de 15 anos é grande demais pra
+    listar; use GET /api/price-scenarios/{id} pra ver um em detalhe."""
+    supabase = get_supabase()
+    resp = (
+        supabase.table("price_scenarios")
+        .select("id, name, submercado, fonte, created_at, precos_por_ano")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    saida = []
+    for row in resp.data:
+        precos = row.pop("precos_por_ano")
+        row["resumo"] = resumo_cenario(precos)
+        saida.append(row)
+    return saida
+
+
+@router.get("/price-scenarios/{scenario_id}")
+def obter_price_scenario(scenario_id: str, user_id: str = Depends(obter_usuario_atual)):
+    cenario = _buscar_price_scenario_do_usuario(scenario_id, user_id)
+    return {**cenario, "resumo": resumo_cenario(cenario["precos_por_ano"])}
+
+
+@router.delete("/price-scenarios/{scenario_id}", status_code=status.HTTP_204_NO_CONTENT)
+def excluir_price_scenario(scenario_id: str, user_id: str = Depends(obter_usuario_atual)):
+    _buscar_price_scenario_do_usuario(scenario_id, user_id)
+    supabase = get_supabase()
+    try:
+        supabase.table("price_scenarios").delete().eq("id", scenario_id).execute()
+    except Exception as exc:
+        # price_scenario_id em `projects` é ON DELETE RESTRICT de propósito — apagar um
+        # cenário ainda usado por um projeto deve falhar de forma clara, não em cascata.
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Esse cenário está em uso por pelo menos um projeto e não pode ser excluído.",
+        ) from exc
+
+
+def _buscar_price_scenario_do_usuario(scenario_id: str, user_id: str) -> dict:
+    supabase = get_supabase()
+    resp = supabase.table("price_scenarios").select("*").eq("id", scenario_id).execute()
+    if not resp.data:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cenário de preço não encontrado.")
+    cenario = resp.data[0]
+    if cenario["user_id"] != user_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Esse cenário de preço não pertence a você.")
+    return cenario
+
+
+def _rodar_simulacao_arbitragem_ou_erro_400(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraArbitragem,
+                                             precos_por_ano_raw: dict, seed: int) -> dict:
+    try:
+        cenario_precos_por_ano = construir_precos_por_ano(precos_por_ano_raw, cfg.prazo_anos)
+        return rodar_simulacao_arbitragem(cfg, fin, cenario_precos_por_ano, seed=seed)
+    except (ValueError, CenarioPrecoInvalido) as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+
+# ---------------------------------------------------------------------------
 # Simulação síncrona (rápida — roda direto na requisição, ~1-2s)
 # ---------------------------------------------------------------------------
 
@@ -128,17 +278,38 @@ def simular(payload: SimulacaoInput, user_id: str = Depends(obter_usuario_atual)
     return _rodar_simulacao_ou_erro_400(cfg, fin, payload.seed)
 
 
+@router.post("/simulate-arbitragem")
+def simular_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = Depends(obter_usuario_atual)):
+    """Simulação ad-hoc (não salva projeto) do modelo de arbitragem — usa um
+    price_scenario_id já existente."""
+    cenario = _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)
+    cfg = _para_cfg_bess(payload.bess)
+    fin = _para_fin_arbitragem(payload.financeiro, cfg.prazo_anos)
+    return _rodar_simulacao_arbitragem_ou_erro_400(cfg, fin, cenario["precos_por_ano"], payload.seed)
+
+
 @router.post("/projects/{project_id}/simulate")
 def simular_projeto_salvo(project_id: str, background_tasks: BackgroundTasks,
                            user_id: str = Depends(obter_usuario_atual)):
-    """Roda a simulação usando o input já salvo no projeto, e persiste o resultado."""
+    """Roda a simulação usando o input já salvo no projeto, e persiste o resultado.
+    Ramifica pelo motor certo conforme `projeto['business_model']`."""
     projeto = _buscar_projeto_do_usuario(project_id, user_id)
-    cfg_input = ConfigBESSInput(**projeto["bess_config"])
-    fin_input = ConfigFinanceiraInput(**projeto["financeiro_config"])
 
-    cfg = _para_cfg_bess(cfg_input)
-    fin = _para_fin(fin_input, cfg.capacidade_nominal_mwh)
-    resultado = _rodar_simulacao_ou_erro_400(cfg, fin, projeto["seed"])
+    if projeto["business_model"] == "lrcap":
+        cfg_input = ConfigBESSInput(**projeto["bess_config"])
+        fin_input = ConfigFinanceiraInput(**projeto["financeiro_config"])
+        cfg = _para_cfg_bess(cfg_input)
+        fin = _para_fin(fin_input, cfg.capacidade_nominal_mwh)
+        resultado = _rodar_simulacao_ou_erro_400(cfg, fin, projeto["seed"])
+    else:
+        if not projeto.get("price_scenario_id"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Projeto de arbitragem sem price_scenario_id associado.")
+        cenario = _buscar_price_scenario_do_usuario(projeto["price_scenario_id"], user_id)
+        cfg_input = ConfigBESSInput(**projeto["bess_config"])
+        fin_input = ConfigFinanceiraArbitragemInput(**projeto["financeiro_config"])
+        cfg = _para_cfg_bess(cfg_input)
+        fin = _para_fin_arbitragem(fin_input, cfg.prazo_anos)
+        resultado = _rodar_simulacao_arbitragem_ou_erro_400(cfg, fin, cenario["precos_por_ano"], projeto["seed"])
 
     supabase = get_supabase()
     registro = {
@@ -164,6 +335,12 @@ def iniciar_sensibilidade(project_id: str, background_tasks: BackgroundTasks,
     Se `bid_equilibrio_rs_ano` não for informado, roda a simulação síncrona
     primeiro para obtê-lo (o BID baseline é o denominador de toda a curva)."""
     projeto = _buscar_projeto_do_usuario(project_id, user_id)
+    if projeto["business_model"] != "lrcap":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Análise de sensibilidade de BID só existe para projetos LRCAP — "
+            "não há BID contratado no modelo de arbitragem.",
+        )
     cfg_input = ConfigBESSInput(**projeto["bess_config"])
     fin_input = ConfigFinanceiraInput(**projeto["financeiro_config"])
     cfg = _para_cfg_bess(cfg_input)

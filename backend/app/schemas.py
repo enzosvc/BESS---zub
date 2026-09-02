@@ -103,6 +103,72 @@ class SimulacaoInput(BaseModel):
     financeiro: ConfigFinanceiraInput
 
 
+# =============================================================================
+# Modelo de negócio: ARBITRAGEM (standalone ou FV+BESS)
+# =============================================================================
+
+class ConfigFinanceiraArbitragemInput(BaseModel):
+    """Mesma família de ConfigFinanceiraInput, SEM custo_nao_atendimento_rs_mwh
+    (não existe compromisso contratual a penalizar) e COM `fv_acoplado`, que
+    decide se a energia de carga é gratuita (FV) ou comprada no PLD (standalone)."""
+    capex_total_rs: float = Field(..., gt=0, description="CAPEX total do projeto, em R$")
+    opex_fixo_pct_capex: float = Field(0.02, ge=0, le=1)
+    custo_variavel_rs_mwh: float = Field(0.0, ge=0)
+    preco_energia_perdas_rs_mwh: float = Field(0.0, ge=0)
+    custo_augmentation_rs_mwh: float = Field(..., gt=0, description="Custo de repor 1 MWh de capacidade, R$/MWh")
+    tarifa_tust_c_rs_kw_mes: float = Field(0.0, ge=0, description="R$/kW.mês")
+    tarifa_tust_g_rs_kw_mes: float = Field(10.0, ge=0, description="R$/kW.mês")
+    taxa_desconto_real: float = Field(0.10, gt=-1, description="WACC real")
+    valor_residual_pct_capex: float = Field(0.00, ge=0, le=1)
+    fv_acoplado: bool = Field(
+        False,
+        description="Se true, a energia de carga do BESS tem custo R$0 (energia solar própria, "
+                     "presumidamente curtailed sem o BESS). Se false, o BESS compra a energia de "
+                     "carga no próprio PLD (standalone).",
+    )
+
+
+class PrecoAnoInput(BaseModel):
+    ano: int = Field(..., gt=0, description="Ano SIMULADO do projeto (1, 2, 3...), não ano calendário")
+    precos_rs_mwh: List[float] = Field(
+        ..., description="Preço horário (R$/MWh), 8760 ou 8784 valores, em ordem cronológica"
+    )
+
+    @field_validator("precos_rs_mwh")
+    @classmethod
+    def valida_tamanho(cls, v):
+        if len(v) not in (8760, 8784):
+            raise ValueError(f"precos_rs_mwh tem {len(v)} valores — esperado 8760 ou 8784 (múltiplo de 24h)")
+        return v
+
+
+class PriceScenarioInput(BaseModel):
+    name: str = Field(..., description="Nome do cenário, ex.: 'PLD SUDESTE histórico 2021-2025'")
+    submercado: Optional[str] = Field(None, description="SUDESTE | SUL | NORDESTE | NORTE, se aplicável")
+    fonte: Optional[str] = Field(None, description="Descrição livre da origem, ex.: 'CCEE PLD horário' ou 'EPE PDE 2035'")
+    anos: List[PrecoAnoInput] = Field(..., min_length=1)
+
+
+class SimulacaoArbitragemInput(BaseModel):
+    nome: Optional[str] = Field(None, description="Nome do projeto/cenário, para salvar")
+    seed: int = Field(2026, description="Semente aleatória (reprodutibilidade)")
+    bess: ConfigBESSInput
+    financeiro: ConfigFinanceiraArbitragemInput
+    price_scenario_id: str = Field(..., description="ID de um cenário de preço já salvo (POST /api/price-scenarios)")
+
+    @field_validator("bess")
+    @classmethod
+    def valida_bess_para_arbitragem(cls, v: ConfigBESSInput):
+        if v.delta_t_h != 1.0:
+            raise ValueError("Para arbitragem, delta_t_h precisa ser 1.0 (granularidade horária, igual ao PLD).")
+        if v.dias_simulados_por_ano != 365:
+            raise ValueError(
+                "Para arbitragem, dias_simulados_por_ano precisa ser 365 — o motor roda o ano "
+                "inteiro vindo do cenário de preço, sem extrapolação de um período menor."
+            )
+        return v
+
+
 class SimulacaoResultado(BaseModel):
     """Espelha o dict devolvido por `engine.rodar_simulacao_completa` — ver lá
     para a estrutura exata de cada campo (mantido como dict solto/`Any` aqui
