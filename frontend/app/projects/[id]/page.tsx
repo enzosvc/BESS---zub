@@ -12,6 +12,7 @@ import SensibilidadeChart from '@/components/charts/SensibilidadeChart';
 import TabelaTecnicaAnual from '@/components/TabelaTecnicaAnual';
 import TabelaSensibilidadeBid from '@/components/TabelaSensibilidadeBid';
 import BidTirChart from '@/components/charts/BidTirChart';
+import ProjetoArbitragemView from '@/components/ProjetoArbitragemView';
 import { ConfigBESS, ConfigFinanceira } from '@/lib/inputSchema';
 import {
   obterProjeto,
@@ -30,6 +31,8 @@ export default function ProjetoPage() {
   const [nome, setNome] = useState('');
   const [bess, setBess] = useState<ConfigBESS | null>(null);
   const [financeiro, setFinanceiro] = useState<ConfigFinanceira | null>(null);
+  const [businessModel, setBusinessModel] = useState<string | null>(null);
+  const [projetoBruto, setProjetoBruto] = useState<any>(null);
   const [carregandoProjeto, setCarregandoProjeto] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [simulando, setSimulando] = useState(false);
@@ -45,8 +48,14 @@ export default function ProjetoPage() {
     obterProjeto(projectId)
       .then((p) => {
         setNome(p.name);
-        setBess(p.bess_config);
-        setFinanceiro(p.financeiro_config);
+        setBusinessModel(p.business_model);
+        setProjetoBruto(p);
+        // bess/financeiro só são usados pelo caminho LRCAP abaixo — para
+        // arbitragem, ProjetoArbitragemView lê de `projetoBruto` (tipos diferentes).
+        if (p.business_model === 'lrcap') {
+          setBess(p.bess_config);
+          setFinanceiro(p.financeiro_config);
+        }
       })
       .catch((err) => setErro(err instanceof Error ? err.message : 'Erro ao carregar projeto.'))
       .finally(() => setCarregandoProjeto(false));
@@ -120,7 +129,29 @@ export default function ProjetoPage() {
     }
   }
 
-  if (carregandoProjeto || !bess || !financeiro) {
+  if (carregandoProjeto || !businessModel) {
+    return (
+      <ProtectedLayout>
+        <p className="text-sm text-slate-500">Carregando projeto...</p>
+      </ProtectedLayout>
+    );
+  }
+
+  if (businessModel !== 'lrcap') {
+    return (
+      <ProtectedLayout>
+        <ProjetoArbitragemView
+          projectId={projectId}
+          nomeInicial={projetoBruto.name}
+          bessInicial={projetoBruto.bess_config}
+          financeiroInicial={projetoBruto.financeiro_config}
+          priceScenarioIdInicial={projetoBruto.price_scenario_id ?? ''}
+        />
+      </ProtectedLayout>
+    );
+  }
+
+  if (!bess || !financeiro) {
     return (
       <ProtectedLayout>
         <p className="text-sm text-slate-500">Carregando projeto...</p>

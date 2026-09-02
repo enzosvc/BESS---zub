@@ -120,6 +120,70 @@ export const CONFIG_FINANCEIRA_DEFAULT: ConfigFinanceira = {
   valor_residual_pct_capex: 0.0,
 };
 
+// =============================================================================
+// Modelo de negócio: ARBITRAGEM (standalone ou FV+BESS)
+//
+// Reaproveita a MESMA interface ConfigBESS acima (a física da bateria é igual
+// nos dois modelos) — só muda o preset default (delta_t_h=1, dias_simulados=365,
+// exigido pelo motor de arbitragem) e a seção financeira, que é uma interface
+// diferente (sem penalidade de não-atendimento, com o toggle fv_acoplado).
+// =============================================================================
+
+export interface ConfigFinanceiraArbitragem {
+  capex_total_rs: number;
+  opex_fixo_pct_capex: number;
+  custo_variavel_rs_mwh: number;
+  preco_energia_perdas_rs_mwh: number;
+  custo_augmentation_rs_mwh: number;
+  tarifa_tust_c_rs_kw_mes: number;
+  tarifa_tust_g_rs_kw_mes: number;
+  taxa_desconto_real: number;
+  valor_residual_pct_capex: number;
+  fv_acoplado: boolean;
+}
+
+export interface SimulacaoArbitragemInput {
+  nome?: string;
+  seed: number;
+  bess: ConfigBESS;
+  financeiro: ConfigFinanceiraArbitragem;
+  price_scenario_id: string;
+}
+
+// Preset de BESS para arbitragem: mesma física, mas delta_t_h=1 e
+// dias_simulados_por_ano=365 são EXIGIDOS pelo motor (validado no backend);
+// as janelas de carga/descarga fixas (LRCAP) ficam sem uso — o despacho vem
+// do preço, não de horários fixos — por isso zeradas aqui, só por clareza.
+export const CONFIG_BESS_ARBITRAGEM_DEFAULT: ConfigBESS = {
+  ...CONFIG_BESS_DEFAULT,
+  delta_t_h: 1.0,
+  dias_simulados_por_ano: 365,
+  disponibilidade_comprometida_mwh: 150.0,
+  carga_janela1_inicio_h: 0,
+  carga_janela1_fim_h: 0,
+  carga_janela2_inicio_h: 0,
+  carga_janela2_fim_h: 0,
+  descarga_janela1_inicio_h: 0,
+  descarga_janela1_fim_h: 0,
+  descarga_janela2_inicio_h: 0,
+  descarga_janela2_fim_h: 0,
+  fracao_minima_ciclo_secundario: 0,
+  probabilidade_ciclo_secundario: 0,
+};
+
+export const CONFIG_FINANCEIRA_ARBITRAGEM_DEFAULT: ConfigFinanceiraArbitragem = {
+  capex_total_rs: 251_200_000,
+  opex_fixo_pct_capex: 0.02,
+  custo_variavel_rs_mwh: 0.0,
+  preco_energia_perdas_rs_mwh: 0.0,
+  custo_augmentation_rs_mwh: 938_704,
+  tarifa_tust_c_rs_kw_mes: 0.0,
+  tarifa_tust_g_rs_kw_mes: 10.0,
+  taxa_desconto_real: 0.1,
+  valor_residual_pct_capex: 0.0,
+  fv_acoplado: true,
+};
+
 // ---------------------------------------------------------------------------
 // Metadados para renderizar o formulário: rótulo, unidade, ajuda, passo do input
 // ---------------------------------------------------------------------------
@@ -238,6 +302,63 @@ export const SECOES_FINANCEIRO: SecaoFormulario[] = [
     campos: [
       { chave: 'custo_augmentation_rs_mwh', rotulo: 'Custo de augmentation', unidade: 'R$/MWh', step: 1000 },
       { chave: 'custo_nao_atendimento_rs_mwh', rotulo: 'Penalidade de não atendimento', unidade: 'R$/MWh', step: 1 },
+    ],
+  },
+  {
+    titulo: 'TUST',
+    campos: [
+      { chave: 'tarifa_tust_c_rs_kw_mes', rotulo: 'Tarifa TUST-C', unidade: 'R$/kW.mês', step: 0.1 },
+      { chave: 'tarifa_tust_g_rs_kw_mes', rotulo: 'Tarifa TUST-G', unidade: 'R$/kW.mês', step: 0.1 },
+    ],
+  },
+  {
+    titulo: 'Taxas',
+    campos: [
+      { chave: 'taxa_desconto_real', rotulo: 'WACC (taxa de desconto real)', unidade: '%', step: 0.001, min: -0.5, max: 1 },
+      { chave: 'valor_residual_pct_capex', rotulo: 'Valor residual (% do CAPEX)', unidade: '%', step: 0.01, min: 0, max: 1 },
+    ],
+  },
+];
+
+// =============================================================================
+// Seções de formulário para ARBITRAGEM
+// =============================================================================
+
+// Mesmas seções de física do BESS, MENOS "Janelas de carga e descarga" — o
+// despacho vem do preço (ver orders_arbitragem.py), não de horários fixos.
+export const SECOES_BESS_ARBITRAGEM: SecaoFormulario[] = SECOES_BESS.filter(
+  (secao) => secao.titulo !== 'Janelas de carga e descarga'
+);
+
+export interface CampoMetaArbitragem {
+  chave: keyof ConfigFinanceiraArbitragem;
+  rotulo: string;
+  unidade?: string;
+  ajuda?: string;
+  step?: number;
+  min?: number;
+  max?: number;
+}
+
+export interface SecaoFormularioArbitragem {
+  titulo: string;
+  campos: CampoMetaArbitragem[];
+}
+
+export const SECOES_FINANCEIRO_ARBITRAGEM: SecaoFormularioArbitragem[] = [
+  {
+    titulo: 'CAPEX e OPEX',
+    campos: [
+      { chave: 'capex_total_rs', rotulo: 'CAPEX total', unidade: 'R$', step: 1000 },
+      { chave: 'opex_fixo_pct_capex', rotulo: 'OPEX fixo (% do CAPEX)', unidade: '%', step: 0.001, min: 0, max: 1 },
+      { chave: 'custo_variavel_rs_mwh', rotulo: 'Custo variável', unidade: 'R$/MWh', step: 0.1 },
+      { chave: 'preco_energia_perdas_rs_mwh', rotulo: 'Preço da energia de perdas', unidade: 'R$/MWh', step: 0.1 },
+    ],
+  },
+  {
+    titulo: 'Augmentation',
+    campos: [
+      { chave: 'custo_augmentation_rs_mwh', rotulo: 'Custo de augmentation', unidade: 'R$/MWh', step: 1000 },
     ],
   },
   {

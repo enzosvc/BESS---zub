@@ -102,3 +102,70 @@ export async function obterStatusSensibilidade(jobId: string) {
   const resp = await fetch(`${API_URL}/api/sensitivity/${jobId}`, { headers });
   return tratarResposta(resp);
 }
+
+// =============================================================================
+// Modelo de negócio: ARBITRAGEM (standalone ou FV+BESS)
+// =============================================================================
+
+export async function criarProjetoArbitragem(payload: unknown) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/projects/arbitragem`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return tratarResposta(resp);
+}
+
+export async function atualizarProjetoArbitragem(projectId: string, payload: unknown) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/projects/${projectId}/arbitragem`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return tratarResposta(resp);
+}
+
+/** Simulação ad-hoc do modelo de arbitragem (não salva projeto). */
+export async function simularArbitragem(payload: unknown) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/simulate-arbitragem`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return tratarResposta(resp);
+}
+
+/** Cenários de preço (PLD real ou projeção), usados pelos modelos de arbitragem. */
+export async function criarPriceScenario(payload: unknown) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/price-scenarios`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return tratarResposta(resp);
+}
+
+export async function listarPriceScenarios() {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/price-scenarios`, { headers });
+  return tratarResposta(resp);
+}
+
+export async function obterPriceScenario(scenarioId: string) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/price-scenarios/${scenarioId}`, { headers });
+  return tratarResposta(resp);
+}
+
+export async function excluirPriceScenario(scenarioId: string) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/price-scenarios/${scenarioId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return tratarResposta(resp);
+}
