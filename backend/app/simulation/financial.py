@@ -79,13 +79,29 @@ def calcular_vpl_detalhado(bid_rs_ano: float, trajetoria: pd.DataFrame,
 
 
 def calcular_tir(fluxo: np.ndarray, chute_min: float = -0.99, chute_max: float = 5.0) -> float:
+    """Busca de raiz (bisseção/Brent) da TIR. Se não convergir no range inicial
+    (±500%), alarga o limite superior exponencialmente antes de desistir —
+    cobre o caso de investimento inicial muito pequeno (mas não nulo), onde a
+    TIR existe só que é muito alta (ex.: payback em poucos meses).
+
+    Quando fluxo[0] >= 0 (nenhum investimento negativo no início), a TIR não
+    é um conceito bem definido — o VPL(taxa) nunca cruza zero em nenhuma taxa
+    finita, porque não há "capital investido" a recuperar. Isso não é uma
+    falha da busca numérica: mesmo alargando o range ao extremo, a raiz que
+    apareceria seria uma taxa astronômica sem significado prático (o VPL, não
+    a TIR, é a métrica correta nesse caso). Por isso o limite de alargamento
+    abaixo é generoso, mas finito — depois dele, `nan` é a resposta certa."""
     def vpl_na_taxa(taxa):
         anos = np.arange(len(fluxo))
         return np.sum(fluxo / (1 + taxa) ** anos)
-    try:
-        return float(brentq(vpl_na_taxa, chute_min, chute_max))
-    except ValueError:
-        return float('nan')
+
+    limite = chute_max
+    for _ in range(8):  # 5 -> 50 -> 500 -> ... -> 5e8 (cobre até paybacks extremamente rápidos)
+        try:
+            return float(brentq(vpl_na_taxa, chute_min, limite))
+        except ValueError:
+            limite *= 10
+    return float('nan')
 
 
 def resolver_bid_equilibrio(trajetoria: pd.DataFrame, fin: ConfigFinanceiraDetalhada) -> float:

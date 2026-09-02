@@ -21,7 +21,7 @@ export default function ReceitaAnualChart({ trajetoria }: { trajetoria: LinhaTra
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
       <h3 className="mb-3 text-sm font-semibold text-ink">
-        Receita líquida de arbitragem por ano (varia com o cenário de preço — não é um BID fixo)
+        Receita líquida de arbitragem por ano (varia com o cenário de preço)
       </h3>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={dados} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>

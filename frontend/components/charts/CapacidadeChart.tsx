@@ -25,7 +25,7 @@ export default function CapacidadeChart({ trajetoria }: { trajetoria: LinhaTraje
   return (
     <div className="rounded-lg border border-line bg-panel p-4">
       <h3 className="mb-3 text-sm font-semibold text-ink">
-        Capacidade ao longo dos 15 anos (marcadores = ano com augmentation)
+        Capacidade ao longo do projeto (marcadores = ano com augmentation)
       </h3>
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={dados} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>

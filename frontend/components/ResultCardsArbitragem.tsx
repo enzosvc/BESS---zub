@@ -55,8 +55,11 @@ export default function ResultCardsArbitragem({
       </div>
       {!tirConverge && (
         <p className="mt-2 text-xs text-bad">
-          A TIR não converge — o fluxo de caixa nunca fica positivo o suficiente pra zerar o VPL em nenhuma
-          taxa testada. Isso normalmente indica um VPL fortemente negativo (projeto não se paga nas premissas atuais).
+          {vplRs >= 0
+            ? 'A TIR não converge porque o investimento inicial é ~R$0 — nesse caso o retorno percentual ' +
+              'tende ao infinito e deixa de ser uma métrica útil. Use o VPL (positivo) para avaliar esse cenário.'
+            : 'A TIR não converge — o fluxo de caixa nunca fica positivo o suficiente pra zerar o VPL em ' +
+              'nenhuma taxa testada. Isso indica um VPL fortemente negativo (projeto não se paga nas premissas atuais).'}
         </p>
       )}
       {tirAbaixoDoWacc && (
