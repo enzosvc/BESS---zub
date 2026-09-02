@@ -8,7 +8,7 @@ que não fazem parte do input do usuário.
 from __future__ import annotations
 
 from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class ConfigBESSInput(BaseModel):
@@ -140,14 +140,14 @@ class ConfigFinanceiraArbitragemInput(BaseModel):
 class PrecoAnoInput(BaseModel):
     ano: int = Field(..., gt=0, description="Ano SIMULADO do projeto (1, 2, 3...), não ano calendário")
     precos_rs_mwh: List[float] = Field(
-        ..., description="Preço horário (R$/MWh), 8760 ou 8784 valores, em ordem cronológica"
+        ..., description="Preço horário (R$/MWh), múltiplo de 24h, em ordem cronológica"
     )
 
     @field_validator("precos_rs_mwh")
     @classmethod
     def valida_tamanho_e_faixa(cls, v):
-        if len(v) not in (8760, 8784):
-            raise ValueError(f"precos_rs_mwh tem {len(v)} valores — esperado 8760 ou 8784 (múltiplo de 24h)")
+        if len(v) == 0 or len(v) % 24 != 0:
+            raise ValueError(f"precos_rs_mwh tem {len(v)} valores — precisa ser múltiplo de 24h (dias completos)")
         fora_da_faixa = [p for p in v if p < 0 or p > 100_000]
         if fora_da_faixa:
             raise ValueError(
@@ -162,6 +162,23 @@ class PriceScenarioInput(BaseModel):
     submercado: Optional[str] = Field(None, description="SUDESTE | SUL | NORDESTE | NORTE, se aplicável")
     fonte: Optional[str] = Field(None, description="Descrição livre da origem, ex.: 'CCEE PLD horário' ou 'EPE PDE 2035'")
     anos: List[PrecoAnoInput] = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def valida_completude_dos_anos(self):
+        """Todo ano PRECISA ter exatamente 8760 ou 8784 horas (ano completo),
+        EXCETO o último (maior `ano`) — esse pode ser parcial (ex.: o ano
+        corrente, ainda em andamento), desde que tenha pelo menos 1 dia
+        completo. Um ano incompleto no MEIO da série indica erro de dado
+        real (buraco), não "ainda não acabou" — por isso continua bloqueado."""
+        anos_ordenados = sorted(self.anos, key=lambda a: a.ano)
+        for item in anos_ordenados[:-1]:
+            n = len(item.precos_rs_mwh)
+            if n not in (8760, 8784):
+                raise ValueError(
+                    f"Ano {item.ano} tem {n} horas — precisa ser exatamente 8760 ou 8784 "
+                    f"(ano completo). Só o ÚLTIMO ano da série pode ser parcial."
+                )
+        return self
 
 
 class SimulacaoArbitragemInput(BaseModel):

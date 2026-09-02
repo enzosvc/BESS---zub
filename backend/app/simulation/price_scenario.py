@@ -22,7 +22,7 @@ class CenarioPrecoInvalido(ValueError):
     pass
 
 
-def validar_lista_precos_ano(precos: List[float], ano_rotulo: str | int) -> None:
+def validar_lista_precos_ano(precos: List[float], ano_rotulo: str | int, permitir_parcial: bool = False) -> None:
     if len(precos) == 0:
         raise CenarioPrecoInvalido(f"Ano {ano_rotulo}: lista de preços vazia.")
     if len(precos) % 24 != 0:
@@ -30,10 +30,10 @@ def validar_lista_precos_ano(precos: List[float], ano_rotulo: str | int) -> None
             f"Ano {ano_rotulo}: {len(precos)} horas não é múltiplo de 24 "
             f"(precisa ser um número inteiro de dias completos)."
         )
-    if len(precos) not in (8760, 8784):
+    if not permitir_parcial and len(precos) not in (8760, 8784):
         raise CenarioPrecoInvalido(
             f"Ano {ano_rotulo}: {len(precos)} horas — esperado 8760 (ano comum) "
-            f"ou 8784 (ano bissexto)."
+            f"ou 8784 (ano bissexto). Só o último ano do cenário pode ser parcial."
         )
 
 
@@ -41,7 +41,8 @@ def construir_precos_por_ano(precos_por_ano_raw: Dict[str, List[float]],
                               prazo_anos: int) -> Dict[int, pd.DataFrame]:
     """
     precos_por_ano_raw: como vem do banco — chaves string ("1", "2", ...),
-    valores = lista de preços horários (8760 ou 8784 números).
+    valores = lista de preços horários (múltiplo de 24; o último ano do
+    cenário pode ser parcial, ex.: o ano corrente ainda em andamento).
 
     NÃO cicla mais o cenário para preencher `prazo_anos`. O horizonte efetivo
     da análise é `min(prazo_anos, anos disponíveis no cenário)` — se o cenário
@@ -50,13 +51,19 @@ def construir_precos_por_ano(precos_por_ano_raw: Dict[str, List[float]],
     prazo_anos EFETIVO a partir do tamanho do dict retornado é
     `engine_arbitragem.rodar_simulacao_arbitragem` (ver `horizonte_efetivo_anos`
     no resultado da simulação).
+
+    Se o ano parcial for de fato usado (não truncado antes de chegar nele), o
+    motor não extrapola: o resultado desse ano reflete só os dias realmente
+    presentes, sem inflar pra parecer um ano cheio (ver annual.py — o fator de
+    anualização fica em 1x para o motor de arbitragem, com ou sem ano parcial).
     """
     if not precos_por_ano_raw:
         raise CenarioPrecoInvalido("Cenário de preço vazio — nenhum ano informado.")
 
     anos_ordenados = sorted(precos_por_ano_raw.keys(), key=lambda k: int(k))
-    for chave in anos_ordenados:
-        validar_lista_precos_ano(precos_por_ano_raw[chave], chave)
+    for indice, chave in enumerate(anos_ordenados):
+        eh_ultimo_do_cenario = indice == len(anos_ordenados) - 1
+        validar_lista_precos_ano(precos_por_ano_raw[chave], chave, permitir_parcial=eh_ultimo_do_cenario)
 
     anos_usados = anos_ordenados[:prazo_anos]  # trunca; nunca cicla
 

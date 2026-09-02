@@ -7,6 +7,7 @@ interface AnoParseado {
   ano: number; // ano SIMULADO (1, 2, 3... em ordem cronológica) — derivado, não digitado
   ano_calendario: number; // só para exibição no preview
   precos_rs_mwh: number[];
+  parcial: boolean; // true = último ano do arquivo, com menos horas que um ano completo
 }
 
 interface ResumoAno {
@@ -14,6 +15,7 @@ interface ResumoAno {
   ano_calendario: number;
   n_horas: number;
   n_horas_esperado: number;
+  parcial: boolean;
   preco_medio_rs_mwh: number;
   preco_min_rs_mwh: number;
   preco_max_rs_mwh: number;
@@ -178,24 +180,30 @@ function parseArquivo(texto: string, submercadoAlvo: string): { anos: AnoParsead
 
   const anosCalendarioOrdenados = Array.from(porAnoCalendario.keys()).sort((a, b) => a - b);
 
-  // Anos incompletos (o mais comum: o ano corrente, ainda em andamento no arquivo
-  // consolidado) são IGNORADOS, não bloqueiam o upload inteiro — só avisados.
+  // Todo ano precisa ser completo (8760/8784h), EXCETO o último — esse pode
+  // ser parcial (o caso mais comum: o ano corrente, ainda em andamento no
+  // arquivo consolidado). Um ano incompleto no MEIO da série continua sendo
+  // ignorado, porque indica um buraco de dado real, não "ainda não acabou".
   const ignorados: AnoIgnorado[] = [];
-  const completos: { ano_calendario: number; precos: number[] }[] = [];
-  for (const anoCalendario of anosCalendarioOrdenados) {
+  const completos: { ano_calendario: number; precos: number[]; parcial: boolean }[] = [];
+  anosCalendarioOrdenados.forEach((anoCalendario, indice) => {
     const precos = porAnoCalendario.get(anoCalendario)!;
     const esperado = ehBissexto(anoCalendario) ? 8784 : 8760;
-    if (precos.length !== esperado) {
-      ignorados.push({ ano_calendario: anoCalendario, n_horas: precos.length, n_horas_esperado: esperado });
+    const ehUltimoDoArquivo = indice === anosCalendarioOrdenados.length - 1;
+
+    if (precos.length === esperado) {
+      completos.push({ ano_calendario: anoCalendario, precos, parcial: false });
+    } else if (ehUltimoDoArquivo && precos.length > 0 && precos.length % 24 === 0) {
+      completos.push({ ano_calendario: anoCalendario, precos, parcial: true });
     } else {
-      completos.push({ ano_calendario: anoCalendario, precos });
+      ignorados.push({ ano_calendario: anoCalendario, n_horas: precos.length, n_horas_esperado: esperado });
     }
-  }
+  });
 
   if (completos.length === 0) {
     throw new Error(
-      `Nenhum ano completo encontrado para ${submercadoAlvo} — todos os anos do arquivo estão com ` +
-      `horas faltando (${ignorados.map((a) => `${a.ano_calendario}: ${a.n_horas}/${a.n_horas_esperado}h`).join(', ')}).`
+      `Nenhum ano utilizável encontrado para ${submercadoAlvo} — todos os anos do arquivo estão com ` +
+      `horas faltando no meio da série (${ignorados.map((a) => `${a.ano_calendario}: ${a.n_horas}/${a.n_horas_esperado}h`).join(', ')}).`
     );
   }
 
@@ -203,6 +211,7 @@ function parseArquivo(texto: string, submercadoAlvo: string): { anos: AnoParsead
     ano: indice + 1,
     ano_calendario: c.ano_calendario,
     precos_rs_mwh: c.precos,
+    parcial: c.parcial,
   }));
 
   return { anos, ignorados };
@@ -214,6 +223,7 @@ function resumir(anos: AnoParseado[]): ResumoAno[] {
     ano_calendario: a.ano_calendario,
     n_horas: a.precos_rs_mwh.length,
     n_horas_esperado: ehBissexto(a.ano_calendario) ? 8784 : 8760,
+    parcial: a.parcial,
     preco_medio_rs_mwh: a.precos_rs_mwh.reduce((s, v) => s + v, 0) / a.precos_rs_mwh.length,
     preco_min_rs_mwh: Math.min(...a.precos_rs_mwh),
     preco_max_rs_mwh: Math.max(...a.precos_rs_mwh),
@@ -330,9 +340,10 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
         <p className="mt-1 text-xs text-muted-2">
           Pode conter os 4 submercados juntos — só as linhas do submercado escolhido acima entram no
           cenário. O ano simulado (1, 2, 3...) é derivado automaticamente da coluna Data, em ordem
-          cronológica — não precisa numerar nada. Aceita separador <code>,</code> ou <code>;</code>,
-          Data em <code>AAAA-MM-DD</code> ou <code>DD/MM/AAAA</code>, e decimal com <code>.</code> ou{' '}
-          <code>,</code>.
+          cronológica — não precisa numerar nada. O último ano do arquivo pode ser parcial (ex.: o ano
+          corrente, ainda em andamento) — só um ano incompleto no meio da série é rejeitado. Aceita
+          separador <code>,</code> ou <code>;</code>, Data em <code>AAAA-MM-DD</code> ou{' '}
+          <code>DD/MM/AAAA</code>, e decimal com <code>.</code> ou <code>,</code>.
         </p>
       </div>
 
@@ -340,9 +351,9 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
 
       {ignorados.length > 0 && (
         <div className="rounded-lg border border-warn/40 bg-panel-2 p-3 text-xs text-warn">
-          {ignorados.length} ano(s) ignorado(s) por estarem incompletos (não entram no cenário):{' '}
-          {ignorados.map((a) => `${a.ano_calendario} (${a.n_horas}/${a.n_horas_esperado}h)`).join(', ')}.
-          Isso é esperado para o ano corrente, ainda em andamento no arquivo consolidado.
+          {ignorados.length} ano(s) ignorado(s) por estarem incompletos NO MEIO da série (não entram no
+          cenário): {ignorados.map((a) => `${a.ano_calendario} (${a.n_horas}/${a.n_horas_esperado}h)`).join(', ')}.
+          Isso normalmente indica linhas faltando no arquivo de origem — confira antes de continuar.
         </div>
       )}
 
@@ -366,6 +377,11 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
                   <td className="py-1 pr-4">{r.ano_calendario}</td>
                   <td className="py-1 pr-4">
                     {r.n_horas}/{r.n_horas_esperado}
+                    {r.parcial && (
+                      <span className="ml-1 rounded-full bg-warn/20 px-1.5 py-0.5 text-[10px] font-medium text-warn">
+                        parcial
+                      </span>
+                    )}
                   </td>
                   <td className="py-1 pr-4">R$ {r.preco_medio_rs_mwh.toFixed(2)}</td>
                   <td className="py-1 pr-4">R$ {r.preco_min_rs_mwh.toFixed(2)}</td>
