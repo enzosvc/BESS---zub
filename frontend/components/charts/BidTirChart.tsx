@@ -9,7 +9,7 @@ interface LinhaSensibilidadeBid {
   bid_testado_rs_ano: number;
   bid_sobre_equilibrio: number;
   vpl_rs: number;
-  tir_pct_aa: number;
+  tir_pct_aa: number | null;
 }
 
 export default function BidTirChart({
@@ -21,7 +21,8 @@ export default function BidTirChart({
 }) {
   const dadosGrafico = dados.map((r) => ({
     'BID (R$ milhões/ano)': Math.round((r.bid_testado_rs_ano / 1_000_000) * 100) / 100,
-    'TIR (% a.a.)': Math.round(r.tir_pct_aa * 100) / 100,
+    // null vira um buraco na linha (não converge nesse ponto testado), em vez de plotar 0%
+    'TIR (% a.a.)': r.tir_pct_aa === null ? null : Math.round(r.tir_pct_aa * 100) / 100,
   }));
 
   return (
@@ -37,7 +38,7 @@ export default function BidTirChart({
             {...EIXO_PROPS}
           />
           <YAxis label={{ value: 'TIR (% a.a.)', angle: -90, position: 'insideLeft', fill: CORES.eixo }} {...EIXO_PROPS} />
-          <Tooltip {...TOOLTIP_STYLE} formatter={(v: number) => `${v.toFixed(2)}%`} />
+          <Tooltip {...TOOLTIP_STYLE} formatter={(v: any) => (v === null ? 'não converge' : `${Number(v).toFixed(2)}%`)} />
           <Legend verticalAlign="top" wrapperStyle={{ color: CORES.eixo, fontSize: 12 }} />
           <ReferenceLine
             y={waccPctAa}

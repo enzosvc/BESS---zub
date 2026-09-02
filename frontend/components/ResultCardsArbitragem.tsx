@@ -2,7 +2,7 @@
 
 interface Props {
   vplRs: number;
-  tirPctAa: number;
+  tirPctAa: number | null;
   waccPctAa: number;
   receitaLiquidaMediaRsAno: number;
   receitaLiquidaAno1Rs: number;
@@ -32,6 +32,11 @@ export default function ResultCardsArbitragem({
   receitaLiquidaAno1Rs,
   modeloNegocio,
 }: Props) {
+  // TIR pode não convergir (fluxo de caixa nunca cruza zero — ex.: VPL muito
+  // negativo) — o backend manda `null` nesse caso (JSON não aceita NaN/Infinity).
+  const tirConverge = tirPctAa !== null && !Number.isNaN(tirPctAa);
+  const tirAbaixoDoWacc = tirConverge && (tirPctAa as number) < waccPctAa;
+
   return (
     <div>
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-2">
@@ -39,12 +44,22 @@ export default function ResultCardsArbitragem({
       </p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Card titulo="VPL do projeto" valor={formatarReais(vplRs)} ruim={vplRs < 0} destaque={vplRs >= 0} />
-        <Card titulo="TIR do projeto" valor={Number.isNaN(tirPctAa) ? 'não converge' : `${tirPctAa.toFixed(2)}% a.a.`} ruim={tirPctAa < waccPctAa} />
+        <Card
+          titulo="TIR do projeto"
+          valor={tirConverge ? `${(tirPctAa as number).toFixed(2)}% a.a.` : 'não converge'}
+          ruim={!tirConverge || tirAbaixoDoWacc}
+        />
         <Card titulo="WACC" valor={`${waccPctAa.toFixed(2)}% a.a.`} />
         <Card titulo="Receita líquida média/ano" valor={formatarReais(receitaLiquidaMediaRsAno)} />
         <Card titulo="Receita líquida — ano 1" valor={formatarReais(receitaLiquidaAno1Rs)} />
       </div>
-      {tirPctAa < waccPctAa && (
+      {!tirConverge && (
+        <p className="mt-2 text-xs text-bad">
+          A TIR não converge — o fluxo de caixa nunca fica positivo o suficiente pra zerar o VPL em nenhuma
+          taxa testada. Isso normalmente indica um VPL fortemente negativo (projeto não se paga nas premissas atuais).
+        </p>
+      )}
+      {tirAbaixoDoWacc && (
         <p className="mt-2 text-xs text-warn">
           TIR abaixo do WACC — nas premissas atuais, a receita de arbitragem não cobre o custo de capital do projeto.
         </p>

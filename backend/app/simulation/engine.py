@@ -15,6 +15,7 @@ from .config import ConfigBESSDetalhado, ConfigFinanceiraDetalhada, validar_curv
 from ..version import obter_versao_modelo
 from .orders import criar_ordens_sinteticas
 from .lifecycle import simular_15_anos
+from .json_safe import sanear_json
 from .financial import (
     calcular_opex_fixo_capex,
     custos_operacionais_ano,
@@ -71,7 +72,7 @@ def rodar_simulacao_completa(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraDeta
     ordens_resumo = ordens[['data_hora', 'potencia_solicitada_mw', 'tipo_evento', 'ciclo_id']].copy()
     ordens_resumo['data_hora'] = ordens_resumo['data_hora'].astype(str)
 
-    return {
+    return sanear_json({
         'versao_modelo': obter_versao_modelo(),
         'entrada': {
             'cfg': cfg.__dict__,
@@ -96,4 +97,4 @@ def rodar_simulacao_completa(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraDeta
             'opex_fixo_capex_rs_ano': fin.opex_fixo_capex_rs_ano,
             'potencia_referencia_tust_mw': fin.potencia_referencia_tust_mw,
         },
-    }
+    })

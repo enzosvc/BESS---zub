@@ -3,7 +3,7 @@
 interface Props {
   bidEquilibrioRsAno: number;
   vplRs: number;
-  tirPctAa: number;
+  tirPctAa: number | null;
   waccPctAa: number;
   opexFixoCapexRsAno: number;
 }
@@ -26,7 +26,7 @@ export default function ResultCards({ bidEquilibrioRsAno, vplRs, tirPctAa, waccP
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       <Card titulo="BID de equilíbrio" valor={`${formatarReais(bidEquilibrioRsAno)}/ano`} destaque />
       <Card titulo="VPL no BID de equilíbrio" valor={formatarReais(vplRs)} />
-      <Card titulo="TIR do projeto" valor={`${tirPctAa.toFixed(2)}% a.a.`} />
+      <Card titulo="TIR do projeto" valor={tirPctAa === null ? 'não converge' : `${tirPctAa.toFixed(2)}% a.a.`} />
       <Card titulo="WACC" valor={`${waccPctAa.toFixed(2)}% a.a.`} />
       <Card titulo="OPEX_FIXO_CAPEX" valor={`${formatarReais(opexFixoCapexRsAno)}/ano`} />
     </div>

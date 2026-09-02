@@ -29,6 +29,7 @@ from .financial_arbitragem import (
     calcular_vpl,
 )
 from .financial import calcular_tir  # genérico, sem nada específico de LRCAP
+from .json_safe import sanear_json
 
 
 def _df_para_records(df: pd.DataFrame) -> list[dict]:
@@ -81,7 +82,7 @@ def rodar_simulacao_arbitragem(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraAr
     ].copy()
     ordens_resumo['data_hora'] = ordens_resumo['data_hora'].astype(str)
 
-    return {
+    return sanear_json({
         'versao_modelo': obter_versao_modelo(),
         'modelo_negocio': 'arbitragem_fv_bess' if fin.fv_acoplado else 'arbitragem_standalone',
         'entrada': {
@@ -105,4 +106,4 @@ def rodar_simulacao_arbitragem(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraAr
             'receita_liquida_media_rs_ano': float(trajetoria['receita_liquida_arbitragem_rs_ano'].mean()),
             'receita_liquida_ano1_rs': float(trajetoria.iloc[0]['receita_liquida_arbitragem_rs_ano']),
         },
-    }
+    })

@@ -4,7 +4,7 @@ interface LinhaSensibilidadeBid {
   bid_testado_rs_ano: number;
   bid_sobre_equilibrio: number;
   vpl_rs: number;
-  tir_pct_aa: number;
+  tir_pct_aa: number | null;
 }
 
 function formatarReais(v: number): string {
@@ -38,7 +38,7 @@ export default function TabelaSensibilidadeBid({ dados }: { dados: LinhaSensibil
                   <td className="py-1.5 pr-3">{formatarReais(r.bid_testado_rs_ano)}</td>
                   <td className="py-1.5 pr-3">{(100 * r.bid_sobre_equilibrio).toFixed(1)}%</td>
                   <td className="py-1.5 pr-3">{formatarReais(r.vpl_rs)}</td>
-                  <td className="py-1.5 pr-3">{r.tir_pct_aa.toFixed(2)}%</td>
+                  <td className="py-1.5 pr-3">{r.tir_pct_aa === null ? '—' : `${r.tir_pct_aa.toFixed(2)}%`}</td>
                 </tr>
               );
             })}
