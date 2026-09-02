@@ -136,9 +136,15 @@ class PrecoAnoInput(BaseModel):
 
     @field_validator("precos_rs_mwh")
     @classmethod
-    def valida_tamanho(cls, v):
+    def valida_tamanho_e_faixa(cls, v):
         if len(v) not in (8760, 8784):
             raise ValueError(f"precos_rs_mwh tem {len(v)} valores — esperado 8760 ou 8784 (múltiplo de 24h)")
+        fora_da_faixa = [p for p in v if p < 0 or p > 100_000]
+        if fora_da_faixa:
+            raise ValueError(
+                f"{len(fora_da_faixa)} valor(es) fora da faixa razoável (0–100.000 R$/MWh), "
+                f"ex.: {fora_da_faixa[0]}. Confira a unidade/formato do arquivo."
+            )
         return v
 
 
