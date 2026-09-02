@@ -4,40 +4,41 @@ import { useState } from 'react';
 import { criarPriceScenario } from '@/lib/api';
 
 interface AnoParseado {
-  ano: number;
+  ano: number; // ano SIMULADO (1, 2, 3... em ordem cronológica) — derivado, não digitado
+  ano_calendario: number; // só para exibição no preview
   precos_rs_mwh: number[];
 }
 
 interface ResumoAno {
   ano: number;
+  ano_calendario: number;
   n_horas: number;
+  n_horas_esperado: number;
   preco_medio_rs_mwh: number;
   preco_min_rs_mwh: number;
   preco_max_rs_mwh: number;
 }
 
 /**
- * Formato esperado do CSV: duas colunas, `ano,preco_rs_mwh` (cabeçalho
- * obrigatório, nomes exatos). As linhas de um mesmo `ano` PRECISAM já estar
- * em ordem cronológica horária (a mesma ordem em que aparecem no arquivo) —
- * é essa ordem que vira a posição hora-a-hora dentro do ano simulado.
- * `ano` é o ano SIMULADO do projeto (1, 2, 3...), não o ano calendário.
+ * Formato esperado do arquivo: as MESMAS 4 colunas do PLD consolidado —
+ * `Data, Hora, Submercado, PLD` (nomes exatos, sem distinguir maiúsc/minúsc).
+ * Não existe mais uma coluna "ano simulado" digitada à mão: o ano simulado
+ * é derivado automaticamente do ano-calendário de `Data`, em ordem
+ * cronológica crescente (o ano-calendário mais antigo no arquivo vira o
+ * ano simulado 1, o segundo mais antigo vira o ano 2, e assim por diante).
  *
- * Isso mapeia direto de uma tabela dinâmica do PLD consolidado: filtre um
- * submercado, ordene por Data+Hora, e numere os anos calendário na ordem em
- * que devem ser simulados (1, 2, 3...).
+ * Como o arquivo consolidado tem os 4 submercados juntos, o campo
+ * "Submercado" do formulário funciona como FILTRO — só as linhas desse
+ * submercado entram no cenário; as outras são ignoradas.
  *
- * Delimitador (`,` ou `;`) e separador decimal (`.` ou `,`) são detectados
- * automaticamente a partir do cabeçalho e dos valores — aceita tanto CSV
- * "internacional" (vírgula separa campos, ponto é decimal) quanto o formato
- * brasileiro comum nos exports de PLD (ponto e vírgula separa campos, vírgula
- * é decimal).
+ * `Data` aceita AAAA-MM-DD (ISO) ou DD/MM/AAAA (Excel/BR). `Hora` é um
+ * inteiro 0-23. Delimitador (`,` ou `;`) e separador decimal do PLD (`.`
+ * ou `,`) são detectados automaticamente.
  */
 
 const FAIXA_PRECO_RAZOAVEL = { min: 0, max: 100_000 }; // R$/MWh — só para pegar erro grosseiro de unidade/digitação
 
 function detectarDelimitador(linhaCabecalho: string): string {
-  // Se o cabeçalho tem ';' e NÃO tem ',', é ponto-e-vírgula. Nos outros casos, vírgula.
   if (linhaCabecalho.includes(';') && !linhaCabecalho.includes(',')) return ';';
   return ',';
 }
@@ -54,19 +55,12 @@ function parseNumero(texto: string, contexto: string): number {
   let normalizado = t;
 
   if (temVirgula && temPonto) {
-    // O separador que aparece por último é o decimal; o outro é milhar (remove).
     const ultimaVirgula = t.lastIndexOf(',');
     const ultimoPonto = t.lastIndexOf('.');
-    if (ultimaVirgula > ultimoPonto) {
-      normalizado = t.replace(/\./g, '').replace(',', '.');
-    } else {
-      normalizado = t.replace(/,/g, '');
-    }
+    normalizado = ultimaVirgula > ultimoPonto ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
   } else if (temVirgula) {
-    // Só vírgula presente -> é o decimal (formato BR: "204,37")
     normalizado = t.replace(',', '.');
   }
-  // Só ponto, ou nenhum separador: já está no formato que Number() entende.
 
   const valor = Number(normalizado);
   if (Number.isNaN(valor) || !Number.isFinite(valor)) {
@@ -75,62 +69,151 @@ function parseNumero(texto: string, contexto: string): number {
   return valor;
 }
 
-function parseCsv(texto: string): AnoParseado[] {
+/** Aceita "AAAA-MM-DD" (ISO, com ou sem hora grudada: "2024-01-01 00:00:00" /
+ * "2024-01-01T00:00:00") ou "DD/MM/AAAA" (Excel/BR). Retorna ano/mês/dia. */
+function parseData(texto: string, contexto: string): { ano: number; mes: number; dia: number } {
+  const t = texto.trim().split(/[ T]/)[0]; // descarta hora grudada na data, se houver
+
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) return { ano: Number(m[1]), mes: Number(m[2]), dia: Number(m[3]) };
+
+  m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return { ano: Number(m[3]), mes: Number(m[2]), dia: Number(m[1]) };
+
+  throw new Error(`${contexto}: data "${texto}" não reconhecida (use AAAA-MM-DD ou DD/MM/AAAA).`);
+}
+
+function ehBissexto(ano: number): boolean {
+  return (ano % 4 === 0 && ano % 100 !== 0) || ano % 400 === 0;
+}
+
+interface LinhaParseada {
+  chaveOrdenacao: number; // ano*1000000 + mes*10000 + dia*100 + hora — pra ordenar cronologicamente
+  ano_calendario: number;
+  preco: number;
+}
+
+interface AnoIgnorado {
+  ano_calendario: number;
+  n_horas: number;
+  n_horas_esperado: number;
+}
+
+function parseArquivo(texto: string, submercadoAlvo: string): { anos: AnoParseado[]; ignorados: AnoIgnorado[] } {
   const linhas = texto.trim().split(/\r?\n/);
-  if (linhas.length < 2) throw new Error('CSV vazio ou só com cabeçalho.');
+  if (linhas.length < 2) throw new Error('Arquivo vazio ou só com cabeçalho.');
 
   const delimitador = detectarDelimitador(linhas[0]);
   const cabecalho = linhas[0].split(delimitador).map((s) => s.trim().toLowerCase());
-  const idxAno = cabecalho.indexOf('ano');
-  const idxPreco = cabecalho.indexOf('preco_rs_mwh');
-  if (idxAno === -1 || idxPreco === -1) {
+  const idxData = cabecalho.indexOf('data');
+  const idxHora = cabecalho.indexOf('hora');
+  const idxSubmercado = cabecalho.indexOf('submercado');
+  const idxPld = cabecalho.indexOf('pld');
+  if (idxData === -1 || idxHora === -1 || idxSubmercado === -1 || idxPld === -1) {
     throw new Error(
-      `Cabeçalho precisa ter as colunas "ano" e "preco_rs_mwh" (delimitador detectado: "${delimitador}"). ` +
-      `Cabeçalho lido: ${linhas[0]}`
+      `Cabeçalho precisa ter as colunas "Data", "Hora", "Submercado" e "PLD" ` +
+      `(delimitador detectado: "${delimitador}"). Cabeçalho lido: ${linhas[0]}`
     );
   }
 
-  const porAno = new Map<number, number[]>();
+  const alvo = submercadoAlvo.trim().toUpperCase();
+  const linhasParseadas: LinhaParseada[] = [];
+
   for (let i = 1; i < linhas.length; i++) {
     const linha = linhas[i].trim();
     if (!linha) continue;
     const partes = linha.split(delimitador);
-    if (partes.length <= Math.max(idxAno, idxPreco)) {
+    if (partes.length <= Math.max(idxData, idxHora, idxSubmercado, idxPld)) {
       throw new Error(`Linha ${i + 1} tem menos colunas que o esperado: "${linha}"`);
     }
 
-    let ano: number;
-    let preco: number;
-    try {
-      ano = parseNumero(partes[idxAno], `Linha ${i + 1}, coluna "ano"`);
-      preco = parseNumero(partes[idxPreco], `Linha ${i + 1}, coluna "preco_rs_mwh"`);
-    } catch (err) {
-      throw err instanceof Error ? err : new Error(`Linha ${i + 1} inválida: "${linha}"`);
-    }
+    const submercadoLinha = partes[idxSubmercado].trim().toUpperCase();
+    if (submercadoLinha !== alvo) continue; // filtra: só o submercado selecionado no formulário
 
-    if (!Number.isInteger(ano) || ano <= 0) {
-      throw new Error(`Linha ${i + 1}: "ano" precisa ser um inteiro positivo (recebido: ${partes[idxAno]}).`);
+    const { ano, mes, dia } = parseData(partes[idxData], `Linha ${i + 1}, coluna "Data"`);
+    const hora = parseNumero(partes[idxHora], `Linha ${i + 1}, coluna "Hora"`);
+    if (!Number.isInteger(hora) || hora < 0 || hora > 23) {
+      throw new Error(`Linha ${i + 1}: "Hora" precisa ser um inteiro de 0 a 23 (recebido: ${partes[idxHora]}).`);
     }
+    const preco = parseNumero(partes[idxPld], `Linha ${i + 1}, coluna "PLD"`);
     if (preco < FAIXA_PRECO_RAZOAVEL.min || preco > FAIXA_PRECO_RAZOAVEL.max) {
       throw new Error(
-        `Linha ${i + 1}: preço ${preco} R$/MWh está fora da faixa razoável ` +
+        `Linha ${i + 1}: PLD ${preco} R$/MWh está fora da faixa razoável ` +
         `(${FAIXA_PRECO_RAZOAVEL.min}–${FAIXA_PRECO_RAZOAVEL.max}). Confira a unidade/formato do arquivo.`
       );
     }
 
-    if (!porAno.has(ano)) porAno.set(ano, []);
-    porAno.get(ano)!.push(preco);
+    linhasParseadas.push({
+      chaveOrdenacao: ano * 1_000_000 + mes * 10_000 + dia * 100 + hora,
+      ano_calendario: ano,
+      preco,
+    });
   }
 
-  return Array.from(porAno.entries())
-    .sort((a, b) => a[0] - b[0])
-    .map(([ano, precos_rs_mwh]) => ({ ano, precos_rs_mwh }));
+  if (linhasParseadas.length === 0) {
+    throw new Error(
+      `Nenhuma linha encontrada para o submercado "${submercadoAlvo}". Confira se o arquivo tem ` +
+      `esse submercado exatamente com esse nome (SUDESTE, SUL, NORDESTE ou NORTE).`
+    );
+  }
+
+  linhasParseadas.sort((a, b) => a.chaveOrdenacao - b.chaveOrdenacao);
+
+  // Agrupa por ano-calendário (já em ordem cronológica) e verifica duplicatas
+  // (mesma chaveOrdenacao repetida = mesma Data+Hora aparecendo mais de uma vez).
+  for (let i = 1; i < linhasParseadas.length; i++) {
+    if (linhasParseadas[i].chaveOrdenacao === linhasParseadas[i - 1].chaveOrdenacao) {
+      throw new Error(
+        `Data/Hora duplicada encontrada para ${submercadoAlvo}: mais de uma linha com a mesma ` +
+        `combinação de Data e Hora. Confira o arquivo de origem.`
+      );
+    }
+  }
+
+  const porAnoCalendario = new Map<number, number[]>();
+  for (const l of linhasParseadas) {
+    if (!porAnoCalendario.has(l.ano_calendario)) porAnoCalendario.set(l.ano_calendario, []);
+    porAnoCalendario.get(l.ano_calendario)!.push(l.preco);
+  }
+
+  const anosCalendarioOrdenados = Array.from(porAnoCalendario.keys()).sort((a, b) => a - b);
+
+  // Anos incompletos (o mais comum: o ano corrente, ainda em andamento no arquivo
+  // consolidado) são IGNORADOS, não bloqueiam o upload inteiro — só avisados.
+  const ignorados: AnoIgnorado[] = [];
+  const completos: { ano_calendario: number; precos: number[] }[] = [];
+  for (const anoCalendario of anosCalendarioOrdenados) {
+    const precos = porAnoCalendario.get(anoCalendario)!;
+    const esperado = ehBissexto(anoCalendario) ? 8784 : 8760;
+    if (precos.length !== esperado) {
+      ignorados.push({ ano_calendario: anoCalendario, n_horas: precos.length, n_horas_esperado: esperado });
+    } else {
+      completos.push({ ano_calendario: anoCalendario, precos });
+    }
+  }
+
+  if (completos.length === 0) {
+    throw new Error(
+      `Nenhum ano completo encontrado para ${submercadoAlvo} — todos os anos do arquivo estão com ` +
+      `horas faltando (${ignorados.map((a) => `${a.ano_calendario}: ${a.n_horas}/${a.n_horas_esperado}h`).join(', ')}).`
+    );
+  }
+
+  const anos = completos.map((c, indice) => ({
+    ano: indice + 1,
+    ano_calendario: c.ano_calendario,
+    precos_rs_mwh: c.precos,
+  }));
+
+  return { anos, ignorados };
 }
 
 function resumir(anos: AnoParseado[]): ResumoAno[] {
   return anos.map((a) => ({
     ano: a.ano,
+    ano_calendario: a.ano_calendario,
     n_horas: a.precos_rs_mwh.length,
+    n_horas_esperado: ehBissexto(a.ano_calendario) ? 8784 : 8760,
     preco_medio_rs_mwh: a.precos_rs_mwh.reduce((s, v) => s + v, 0) / a.precos_rs_mwh.length,
     preco_min_rs_mwh: Math.min(...a.precos_rs_mwh),
     preco_max_rs_mwh: Math.max(...a.precos_rs_mwh),
@@ -142,37 +225,42 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
   const [submercado, setSubmercado] = useState('SUDESTE');
   const [fonte, setFonte] = useState('');
   const [anosParseados, setAnosParseados] = useState<AnoParseado[] | null>(null);
+  const [ignorados, setIgnorados] = useState<AnoIgnorado[]>([]);
   const [resumo, setResumo] = useState<ResumoAno[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [arquivoTexto, setArquivoTexto] = useState<string | null>(null);
 
-  function handleArquivo(e: React.ChangeEvent<HTMLInputElement>) {
+  function processarArquivo(texto: string, submercadoAlvo: string) {
     setErro(null);
     setAnosParseados(null);
+    setIgnorados([]);
     setResumo(null);
+    try {
+      const { anos, ignorados: anosIgnorados } = parseArquivo(texto, submercadoAlvo);
+      setAnosParseados(anos);
+      setIgnorados(anosIgnorados);
+      setResumo(resumir(anos));
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao ler o arquivo.');
+    }
+  }
+
+  function handleArquivo(e: React.ChangeEvent<HTMLInputElement>) {
     const arquivo = e.target.files?.[0];
     if (!arquivo) return;
-
     const reader = new FileReader();
     reader.onload = () => {
-      try {
-        const anos = parseCsv(reader.result as string);
-        for (const a of anos) {
-          if (a.precos_rs_mwh.length !== 8760 && a.precos_rs_mwh.length !== 8784) {
-            throw new Error(
-              `Ano ${a.ano} tem ${a.precos_rs_mwh.length} horas — precisa ser exatamente 8760 ` +
-              `(ano comum) ou 8784 (ano bissexto). Confira se não há linhas faltando, duplicadas, ` +
-              `ou de outro ano misturadas.`
-            );
-          }
-        }
-        setAnosParseados(anos);
-        setResumo(resumir(anos));
-      } catch (err) {
-        setErro(err instanceof Error ? err.message : 'Erro ao ler o CSV.');
-      }
+      const texto = reader.result as string;
+      setArquivoTexto(texto);
+      processarArquivo(texto, submercado);
     };
     reader.readAsText(arquivo);
+  }
+
+  function handleTrocarSubmercado(novoSubmercado: string) {
+    setSubmercado(novoSubmercado);
+    if (arquivoTexto) processarArquivo(arquivoTexto, novoSubmercado); // reprocessa com o novo filtro
   }
 
   async function handleSalvar() {
@@ -184,7 +272,7 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
         name: nome,
         submercado,
         fonte: fonte || undefined,
-        anos: anosParseados,
+        anos: anosParseados.map((a) => ({ ano: a.ano, precos_rs_mwh: a.precos_rs_mwh })),
       });
       onCriado(salvo);
     } catch (err) {
@@ -208,10 +296,12 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted">Submercado</label>
+          <label className="mb-1 block text-xs font-medium text-muted">
+            Submercado <span className="text-muted-2">(filtra as linhas do arquivo)</span>
+          </label>
           <select
             value={submercado}
-            onChange={(e) => setSubmercado(e.target.value)}
+            onChange={(e) => handleTrocarSubmercado(e.target.value)}
             className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
           >
             <option value="SUDESTE">SUDESTE</option>
@@ -233,17 +323,28 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
 
       <div>
         <label className="mb-1 block text-xs font-medium text-muted">
-          Arquivo CSV — colunas <code className="rounded bg-panel-2 px-1">ano,preco_rs_mwh</code>
+          Arquivo CSV — colunas{' '}
+          <code className="rounded bg-panel-2 px-1">Data,Hora,Submercado,PLD</code> (igual ao PLD consolidado)
         </label>
         <input type="file" accept=".csv" onChange={handleArquivo} className="text-sm" />
         <p className="mt-1 text-xs text-muted-2">
-          `ano` é o ano SIMULADO (1, 2, 3...), não o ano calendário. Cada ano precisa ter exatamente
-          8760 (ano comum) ou 8784 (bissexto) linhas, em ordem cronológica horária. Aceita separador
-          `,` ou `;`, e decimal com `.` ou `,` — detectados automaticamente.
+          Pode conter os 4 submercados juntos — só as linhas do submercado escolhido acima entram no
+          cenário. O ano simulado (1, 2, 3...) é derivado automaticamente da coluna Data, em ordem
+          cronológica — não precisa numerar nada. Aceita separador <code>,</code> ou <code>;</code>,
+          Data em <code>AAAA-MM-DD</code> ou <code>DD/MM/AAAA</code>, e decimal com <code>.</code> ou{' '}
+          <code>,</code>.
         </p>
       </div>
 
       {erro && <p className="text-sm text-bad">{erro}</p>}
+
+      {ignorados.length > 0 && (
+        <div className="rounded-lg border border-warn/40 bg-panel-2 p-3 text-xs text-warn">
+          {ignorados.length} ano(s) ignorado(s) por estarem incompletos (não entram no cenário):{' '}
+          {ignorados.map((a) => `${a.ano_calendario} (${a.n_horas}/${a.n_horas_esperado}h)`).join(', ')}.
+          Isso é esperado para o ano corrente, ainda em andamento no arquivo consolidado.
+        </div>
+      )}
 
       {resumo && (
         <div className="overflow-x-auto">
@@ -251,6 +352,7 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
             <thead>
               <tr className="border-b border-line text-left text-muted">
                 <th className="py-1 pr-4">Ano simulado</th>
+                <th className="py-1 pr-4">Ano calendário</th>
                 <th className="py-1 pr-4">Horas</th>
                 <th className="py-1 pr-4">Preço médio</th>
                 <th className="py-1 pr-4">Mín</th>
@@ -261,7 +363,10 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
               {resumo.map((r) => (
                 <tr key={r.ano} className="border-b border-line">
                   <td className="py-1 pr-4">{r.ano}</td>
-                  <td className="py-1 pr-4">{r.n_horas}</td>
+                  <td className="py-1 pr-4">{r.ano_calendario}</td>
+                  <td className="py-1 pr-4">
+                    {r.n_horas}/{r.n_horas_esperado}
+                  </td>
                   <td className="py-1 pr-4">R$ {r.preco_medio_rs_mwh.toFixed(2)}</td>
                   <td className="py-1 pr-4">R$ {r.preco_min_rs_mwh.toFixed(2)}</td>
                   <td className="py-1 pr-4">R$ {r.preco_max_rs_mwh.toFixed(2)}</td>
