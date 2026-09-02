@@ -14,11 +14,12 @@ function formatarReais(v: number): string {
 }
 
 function Card({ titulo, valor, destaque, ruim }: { titulo: string; valor: string; destaque?: boolean; ruim?: boolean }) {
-  const cor = ruim ? 'border-red-300 bg-red-50 text-red-700' : destaque ? 'border-primary bg-blue-50 text-primary' : 'border-slate-200 bg-white text-slate-900';
+  const borda = ruim ? 'border-bad/50 bg-panel-2' : destaque ? 'border-accent bg-panel-2' : 'border-line bg-panel';
+  const cor = ruim ? 'text-bad' : destaque ? 'text-accent' : 'text-ink';
   return (
-    <div className={`rounded-lg border p-4 ${ruim || destaque ? cor : 'border-slate-200 bg-white'}`}>
-      <p className="text-xs text-slate-500">{titulo}</p>
-      <p className={`mt-1 text-lg font-semibold ${ruim || destaque ? cor.split(' ').pop() : 'text-slate-900'}`}>{valor}</p>
+    <div className={`rounded-lg border p-4 ${borda}`}>
+      <p className="text-xs text-muted">{titulo}</p>
+      <p className={`mt-1 text-lg font-semibold font-data ${cor}`}>{valor}</p>
     </div>
   );
 }
@@ -33,7 +34,7 @@ export default function ResultCardsArbitragem({
 }: Props) {
   return (
     <div>
-      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+      <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-2">
         Modelo: {modeloNegocio === 'arbitragem_fv_bess' ? 'Arbitragem FV + BESS' : 'Arbitragem Standalone'}
       </p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -44,7 +45,7 @@ export default function ResultCardsArbitragem({
         <Card titulo="Receita líquida — ano 1" valor={formatarReais(receitaLiquidaAno1Rs)} />
       </div>
       {tirPctAa < waccPctAa && (
-        <p className="mt-2 text-xs text-amber-700">
+        <p className="mt-2 text-xs text-warn">
           TIR abaixo do WACC — nas premissas atuais, a receita de arbitragem não cobre o custo de capital do projeto.
         </p>
       )}

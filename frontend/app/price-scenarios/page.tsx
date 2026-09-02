@@ -50,14 +50,14 @@ export default function PriceScenariosPage() {
     <ProtectedLayout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Cenários de preço</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl font-semibold text-ink">Cenários de preço</h1>
+          <p className="text-sm text-muted">
             Usados pelos projetos de arbitragem (standalone e FV+BESS) — PLD histórico ou projeção própria.
           </p>
         </div>
         <button
           onClick={() => setMostrarUpload((v) => !v)}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
         >
           {mostrarUpload ? 'Fechar' : '+ Novo cenário'}
         </button>
@@ -74,11 +74,11 @@ export default function PriceScenariosPage() {
         </div>
       )}
 
-      {carregando && <p className="text-sm text-slate-500">Carregando...</p>}
-      {erro && <p className="text-sm text-red-600">{erro}</p>}
+      {carregando && <p className="text-sm text-muted">Carregando...</p>}
+      {erro && <p className="text-sm text-bad">{erro}</p>}
 
       {!carregando && cenarios.length === 0 && !mostrarUpload && (
-        <div className="rounded-lg border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
+        <div className="rounded-lg border border-dashed border-line bg-panel p-10 text-center text-sm text-muted">
           Nenhum cenário salvo ainda. Clique em <strong>+ Novo cenário</strong> para fazer upload de um PLD
           histórico ou de uma projeção própria (ex.: EPE/CCEE).
         </div>
@@ -88,16 +88,16 @@ export default function PriceScenariosPage() {
         {cenarios.map((c) => (
           <div
             key={c.id}
-            className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm"
+            className="flex items-center justify-between rounded-lg border border-line bg-panel px-5 py-4 shadow-sm"
           >
             <div>
-              <p className="font-medium text-slate-900">{c.name}</p>
-              <p className="text-xs text-slate-400">
+              <p className="font-medium text-ink">{c.name}</p>
+              <p className="text-xs text-muted-2">
                 {c.submercado ?? 'submercado não informado'} · {c.resumo.n_anos} ano(s) ·{' '}
                 {c.fonte ?? 'fonte não informada'} · criado em {new Date(c.created_at).toLocaleDateString('pt-BR')}
               </p>
             </div>
-            <button onClick={() => handleExcluir(c.id, c.name)} className="text-sm text-red-500 hover:underline">
+            <button onClick={() => handleExcluir(c.id, c.name)} className="text-sm text-bad hover:underline">
               Excluir
             </button>
           </div>

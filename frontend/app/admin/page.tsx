@@ -40,22 +40,22 @@ export default function AdminPage() {
 
   return (
     <ProtectedLayout>
-      <h1 className="mb-6 text-xl font-semibold text-slate-900">Atalhos do projeto</h1>
+      <h1 className="mb-6 text-xl font-semibold text-ink">Atalhos do projeto</h1>
 
       {!desbloqueado ? (
         <form onSubmit={handleSubmit} className="max-w-xs space-y-3">
-          <label className="block text-sm font-medium text-slate-700">Senha de acesso</label>
+          <label className="block text-sm font-medium text-ink">Senha de acesso</label>
           <input
             type="password"
             autoFocus
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+            className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-2 text-sm focus:border-accent focus:outline-none"
           />
-          {erro && <p className="text-sm text-red-600">{erro}</p>}
+          {erro && <p className="text-sm text-bad">{erro}</p>}
           <button
             type="submit"
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
           >
             Desbloquear
           </button>
@@ -68,13 +68,13 @@ export default function AdminPage() {
               href={atalho.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+              className="rounded-lg border border-line bg-panel p-4 shadow-sm transition hover:shadow-md"
             >
-              <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium text-white ${atalho.cor}`}>
+              <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium text-on-accent ${atalho.cor}`}>
                 {atalho.nome}
               </span>
-              <p className="mt-2 text-sm text-slate-600">{atalho.descricao}</p>
-              <p className="mt-1 truncate text-xs text-slate-400">{atalho.url}</p>
+              <p className="mt-2 text-sm text-muted">{atalho.descricao}</p>
+              <p className="mt-1 truncate text-xs text-muted-2">{atalho.url}</p>
             </a>
           ))}
         </div>

@@ -31,23 +31,23 @@ export default function NovoProjetoPage() {
   return (
     <ProtectedLayout>
       <div className="mb-6">
-        <label className="mb-1 block text-xs font-medium text-slate-600">Nome do projeto</label>
+        <label className="mb-1 block text-xs font-medium text-muted">Nome do projeto</label>
         <input
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          className="w-full max-w-md rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none"
+          className="w-full max-w-md rounded-md border border-line bg-panel-2 text-ink px-3 py-2 text-sm focus:border-accent focus:outline-none"
         />
       </div>
 
       <InputForm bess={bess} financeiro={financeiro} onChangeBess={setBess} onChangeFinanceiro={setFinanceiro} />
 
-      {erro && <p className="mt-4 text-sm text-red-600">{erro}</p>}
+      {erro && <p className="mt-4 text-sm text-bad">{erro}</p>}
 
       <div className="mt-6 flex justify-end">
         <button
           onClick={handleSalvar}
           disabled={salvando}
-          className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          className="rounded-md bg-accent px-5 py-2 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50"
         >
           {salvando ? 'Salvando...' : 'Salvar e abrir projeto'}
         </button>

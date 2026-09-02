@@ -16,7 +16,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }, [carregando, session, router]);
 
   if (carregando) {
-    return <div className="flex h-screen items-center justify-center text-slate-500">Carregando...</div>;
+    return <div className="flex h-screen items-center justify-center bg-bg font-mono text-sm text-muted">Carregando...</div>;
   }
   if (!session) return null; // aguardando o redirect do useEffect
 
@@ -26,14 +26,14 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-primary">
+    <div className="min-h-screen bg-bg">
+      <header className="border-b border-line bg-panel">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link href="/dashboard" className="flex items-center">
             <Image src="/logo-zub.png" alt="ZUB" width={92} height={50} priority />
           </Link>
-          <div className="flex items-center gap-4 text-sm text-slate-300">
-            <Link href="/admin" className="hover:text-accent">
+          <div className="flex items-center gap-4 font-mono text-sm text-muted">
+            <Link href="/admin" className="transition-colors hover:text-accent">
               Atalhos
             </Link>
             <span>{usuario?.email}</span>

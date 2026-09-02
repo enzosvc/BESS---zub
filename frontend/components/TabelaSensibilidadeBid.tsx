@@ -13,14 +13,14 @@ function formatarReais(v: number): string {
 
 export default function TabelaSensibilidadeBid({ dados }: { dados: LinhaSensibilidadeBid[] }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">
+    <div className="rounded-lg border border-line bg-panel p-4">
+      <h3 className="mb-3 text-sm font-semibold text-ink">
         Sensibilidade financeira — BID testado × VPL × TIR
       </h3>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[500px] text-xs">
           <thead>
-            <tr className="border-b border-slate-200 text-left text-slate-500">
+            <tr className="border-b border-line text-left text-muted">
               <th className="py-2 pr-3">BID testado (R$/ano)</th>
               <th className="py-2 pr-3">BID / BID equilíbrio</th>
               <th className="py-2 pr-3">VPL (R$)</th>
@@ -33,7 +33,7 @@ export default function TabelaSensibilidadeBid({ dados }: { dados: LinhaSensibil
               return (
                 <tr
                   key={i}
-                  className={`border-b border-slate-100 text-slate-700 ${noEquilibrio ? 'bg-blue-50 font-medium' : ''}`}
+                  className={`border-b border-line text-ink ${noEquilibrio ? 'bg-panel-2 font-medium' : ''}`}
                 >
                   <td className="py-1.5 pr-3">{formatarReais(r.bid_testado_rs_ano)}</td>
                   <td className="py-1.5 pr-3">{(100 * r.bid_sobre_equilibrio).toFixed(1)}%</td>

@@ -27,8 +27,8 @@ function CampoNumerico({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">
-        {meta.rotulo} {meta.unidade && <span className="text-slate-400">({meta.unidade})</span>}
+      <label className="mb-1 block text-xs font-medium text-muted">
+        {meta.rotulo} {meta.unidade && <span className="text-muted-2">({meta.unidade})</span>}
       </label>
       <input
         type="number"
@@ -37,9 +37,9 @@ function CampoNumerico({
         max={meta.max}
         value={valor}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+        className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
       />
-      {meta.ajuda && <p className="mt-0.5 text-xs text-slate-400">{meta.ajuda}</p>}
+      {meta.ajuda && <p className="mt-0.5 text-xs text-muted-2">{meta.ajuda}</p>}
     </div>
   );
 }
@@ -62,15 +62,15 @@ function CampoArray({
 
   return (
     <div className="sm:col-span-2 lg:col-span-3">
-      <label className="mb-1 block text-xs font-medium text-slate-600">
-        {rotulo} <span className="text-slate-400">(índice 0 = comissionamento; separados por vírgula)</span>
+      <label className="mb-1 block text-xs font-medium text-muted">
+        {rotulo} <span className="text-muted-2">(índice 0 = comissionamento; separados por vírgula)</span>
       </label>
       <textarea
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
         onBlur={aplicar}
         rows={2}
-        className="w-full rounded-md border border-slate-300 px-3 py-1.5 font-mono text-xs focus:border-primary focus:outline-none"
+        className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 font-mono text-xs focus:border-accent focus:outline-none"
       />
     </div>
   );
@@ -90,17 +90,17 @@ export default function InputForm({ bess, financeiro, onChangeBess, onChangeFina
   function renderSecao(titulo: string, campos: CampoMeta[], valores: Record<string, unknown>, onChange: (c: string, v: any) => void) {
     const aberta = secaoAberta === titulo;
     return (
-      <div key={titulo} className="rounded-lg border border-slate-200 bg-white">
+      <div key={titulo} className="rounded-lg border border-line bg-panel">
         <button
           type="button"
           onClick={() => setSecaoAberta(aberta ? null : titulo)}
-          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-800"
+          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-ink"
         >
           {titulo}
-          <span className="text-slate-400">{aberta ? '−' : '+'}</span>
+          <span className="text-muted-2">{aberta ? '−' : '+'}</span>
         </button>
         {aberta && (
-          <div className="grid grid-cols-1 gap-4 border-t border-slate-100 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 border-t border-line p-4 sm:grid-cols-2 lg:grid-cols-3">
             {campos.map((meta) => {
               const valorAtual = valores[meta.chave as string];
               if (Array.isArray(valorAtual)) {
@@ -130,7 +130,7 @@ export default function InputForm({ bess, financeiro, onChangeBess, onChangeFina
 
   return (
     <div className="space-y-3">
-      <h2 className="mt-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <h2 className="mt-2 text-sm font-semibold uppercase tracking-wide text-muted-2">
         Parâmetros técnicos
       </h2>
       {SECOES_BESS.map((secao) =>
@@ -139,7 +139,7 @@ export default function InputForm({ bess, financeiro, onChangeBess, onChangeFina
         )
       )}
 
-      <h2 className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <h2 className="mt-6 text-sm font-semibold uppercase tracking-wide text-muted-2">
         Parâmetros financeiros
       </h2>
       {SECOES_FINANCEIRO.map((secao) =>

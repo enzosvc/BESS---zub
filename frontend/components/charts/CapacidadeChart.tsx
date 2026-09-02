@@ -3,6 +3,7 @@
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
+import { CORES, TOOLTIP_STYLE, EIXO_PROPS } from '@/lib/chartTheme';
 
 interface LinhaTrajetoria {
   ano: number;
@@ -22,24 +23,24 @@ export default function CapacidadeChart({ trajetoria }: { trajetoria: LinhaTraje
   }));
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
-      <h3 className="mb-3 text-sm font-semibold text-slate-800">
+    <div className="rounded-lg border border-line bg-panel p-4">
+      <h3 className="mb-3 text-sm font-semibold text-ink">
         Capacidade ao longo dos 15 anos (marcadores = ano com augmentation)
       </h3>
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={dados} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-          <XAxis dataKey="ano" label={{ value: 'Ano', position: 'insideBottom', offset: -3 }} fontSize={12} />
-          <YAxis fontSize={12} label={{ value: 'MWh', angle: -90, position: 'insideLeft' }} />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="Capacidade de placa (MWh)" stroke="#94a3b8" strokeDasharray="4 2" dot={{ r: 3 }} />
-          <Line type="monotone" dataKey="Capacidade líquida no POI (MWh)" stroke="#f97316" strokeWidth={2} dot={(props: any) => {
+          <CartesianGrid strokeDasharray="3 3" stroke={CORES.grid} />
+          <XAxis dataKey="ano" label={{ value: 'Ano', position: 'insideBottom', offset: -3, fill: CORES.eixo }} {...EIXO_PROPS} />
+          <YAxis label={{ value: 'MWh', angle: -90, position: 'insideLeft', fill: CORES.eixo }} {...EIXO_PROPS} />
+          <Tooltip {...TOOLTIP_STYLE} />
+          <Legend wrapperStyle={{ color: CORES.eixo, fontSize: 12 }} />
+          <Line type="monotone" dataKey="Capacidade de placa (MWh)" stroke={CORES.muted} strokeDasharray="4 2" dot={{ r: 3, fill: CORES.muted }} />
+          <Line type="monotone" dataKey="Capacidade líquida no POI (MWh)" stroke={CORES.accent} strokeWidth={2} dot={(props: any) => {
             const { cx, cy, payload } = props;
             return payload.augmentation ? (
-              <circle key={`aug-${payload.ano}`} cx={cx} cy={cy} r={5} fill="#16a34a" stroke="#16a34a" />
+              <circle key={`aug-${payload.ano}`} cx={cx} cy={cy} r={5} fill={CORES.amber} stroke={CORES.amber} />
             ) : (
-              <circle key={`pt-${payload.ano}`} cx={cx} cy={cy} r={2.5} fill="#f97316" />
+              <circle key={`pt-${payload.ano}`} cx={cx} cy={cy} r={2.5} fill={CORES.accent} />
             );
           }} />
         </LineChart>

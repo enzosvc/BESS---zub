@@ -3,6 +3,31 @@
 @tailwind utilities;
 
 body {
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: #0A0E22;
+  color: #E8ECF7;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Números e dados tabulares em mono, no espírito do relatório de PLD/arbitragem */
+.font-data {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: #47D73D;
+  color: #08210A;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6A73A0;
+}
+
+/* Chrome/Safari: inputs numéricos escuros ficam com fundo branco por padrão
+   se não forem pintados — os componentes já fazem isso via className, mas
+   isso cobre o autofill do navegador. */
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px #1B2350 inset;
+  -webkit-text-fill-color: #E8ECF7;
 }

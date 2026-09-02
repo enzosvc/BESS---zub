@@ -14,9 +14,9 @@ function formatarReais(v: number): string {
 
 function Card({ titulo, valor, destaque }: { titulo: string; valor: string; destaque?: boolean }) {
   return (
-    <div className={`rounded-lg border p-4 ${destaque ? 'border-primary bg-blue-50' : 'border-slate-200 bg-white'}`}>
-      <p className="text-xs text-slate-500">{titulo}</p>
-      <p className={`mt-1 text-lg font-semibold ${destaque ? 'text-primary' : 'text-slate-900'}`}>{valor}</p>
+    <div className={`rounded-lg border p-4 ${destaque ? 'border-accent bg-panel-2' : 'border-line bg-panel'}`}>
+      <p className="text-xs text-muted">{titulo}</p>
+      <p className={`mt-1 text-lg font-semibold ${destaque ? 'text-accent' : 'text-ink'}`}>{valor}</p>
     </div>
   );
 }

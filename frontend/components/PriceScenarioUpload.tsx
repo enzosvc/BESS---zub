@@ -123,24 +123,24 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
+    <div className="space-y-4 rounded-lg border border-line bg-panel p-4">
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">Nome do cenário</label>
+        <label className="mb-1 block text-xs font-medium text-muted">Nome do cenário</label>
         <input
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           placeholder="ex.: PLD SUDESTE histórico 2021-2025"
-          className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+          className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Submercado</label>
+          <label className="mb-1 block text-xs font-medium text-muted">Submercado</label>
           <select
             value={submercado}
             onChange={(e) => setSubmercado(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+            className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
           >
             <option value="SUDESTE">SUDESTE</option>
             <option value="SUL">SUL</option>
@@ -149,34 +149,34 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Fonte (opcional)</label>
+          <label className="mb-1 block text-xs font-medium text-muted">Fonte (opcional)</label>
           <input
             value={fonte}
             onChange={(e) => setFonte(e.target.value)}
             placeholder="ex.: CCEE PLD horário / Projeção EPE PDE 2035"
-            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+            className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
           />
         </div>
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">
-          Arquivo CSV — colunas <code className="rounded bg-slate-100 px-1">ano,preco_rs_mwh</code>
+        <label className="mb-1 block text-xs font-medium text-muted">
+          Arquivo CSV — colunas <code className="rounded bg-panel-2 px-1">ano,preco_rs_mwh</code>
         </label>
         <input type="file" accept=".csv" onChange={handleArquivo} className="text-sm" />
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="mt-1 text-xs text-muted-2">
           `ano` é o ano SIMULADO (1, 2, 3...), não o ano calendário. As linhas de cada ano precisam já
           estar em ordem cronológica horária (8760 ou 8784 linhas por ano).
         </p>
       </div>
 
-      {erro && <p className="text-sm text-red-600">{erro}</p>}
+      {erro && <p className="text-sm text-bad">{erro}</p>}
 
       {resumo && (
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-slate-500">
+              <tr className="border-b border-line text-left text-muted">
                 <th className="py-1 pr-4">Ano simulado</th>
                 <th className="py-1 pr-4">Horas</th>
                 <th className="py-1 pr-4">Preço médio</th>
@@ -186,7 +186,7 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
             </thead>
             <tbody>
               {resumo.map((r) => (
-                <tr key={r.ano} className="border-b border-slate-100">
+                <tr key={r.ano} className="border-b border-line">
                   <td className="py-1 pr-4">{r.ano}</td>
                   <td className="py-1 pr-4">{r.n_horas}</td>
                   <td className="py-1 pr-4">R$ {r.preco_medio_rs_mwh.toFixed(2)}</td>
@@ -203,7 +203,7 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
         <button
           onClick={handleSalvar}
           disabled={!anosParseados || !nome.trim() || enviando}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50"
         >
           {enviando ? 'Salvando...' : 'Salvar cenário'}
         </button>

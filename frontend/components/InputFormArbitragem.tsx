@@ -38,8 +38,8 @@ function CampoNumerico({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">
-        {meta.rotulo} {meta.unidade && <span className="text-slate-400">({meta.unidade})</span>}
+      <label className="mb-1 block text-xs font-medium text-muted">
+        {meta.rotulo} {meta.unidade && <span className="text-muted-2">({meta.unidade})</span>}
       </label>
       <input
         type="number"
@@ -48,9 +48,9 @@ function CampoNumerico({
         max={meta.max}
         value={valor}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+        className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
       />
-      {meta.ajuda && <p className="mt-0.5 text-xs text-slate-400">{meta.ajuda}</p>}
+      {meta.ajuda && <p className="mt-0.5 text-xs text-muted-2">{meta.ajuda}</p>}
     </div>
   );
 }
@@ -73,15 +73,15 @@ function CampoArray({
 
   return (
     <div className="sm:col-span-2 lg:col-span-3">
-      <label className="mb-1 block text-xs font-medium text-slate-600">
-        {rotulo} <span className="text-slate-400">(índice 0 = comissionamento; separados por vírgula)</span>
+      <label className="mb-1 block text-xs font-medium text-muted">
+        {rotulo} <span className="text-muted-2">(índice 0 = comissionamento; separados por vírgula)</span>
       </label>
       <textarea
         value={texto}
         onChange={(e) => setTexto(e.target.value)}
         onBlur={aplicar}
         rows={2}
-        className="w-full rounded-md border border-slate-300 px-3 py-1.5 font-mono text-xs focus:border-primary focus:outline-none"
+        className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 font-mono text-xs focus:border-accent focus:outline-none"
       />
     </div>
   );
@@ -121,17 +121,17 @@ export default function InputFormArbitragem({
   ) {
     const aberta = secaoAberta === titulo;
     return (
-      <div key={titulo} className="rounded-lg border border-slate-200 bg-white">
+      <div key={titulo} className="rounded-lg border border-line bg-panel">
         <button
           type="button"
           onClick={() => setSecaoAberta(aberta ? null : titulo)}
-          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-slate-800"
+          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-ink"
         >
           {titulo}
-          <span className="text-slate-400">{aberta ? '−' : '+'}</span>
+          <span className="text-muted-2">{aberta ? '−' : '+'}</span>
         </button>
         {aberta && (
-          <div className="grid grid-cols-1 gap-4 border-t border-slate-100 p-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 border-t border-line p-4 sm:grid-cols-2 lg:grid-cols-3">
             {campos.map((meta) => {
               const valorAtual = valores[meta.chave as string];
               if (Array.isArray(valorAtual)) {
@@ -161,34 +161,34 @@ export default function InputFormArbitragem({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-primary/30 bg-blue-50 p-4">
+      <div className="rounded-lg border border-accent/30 bg-panel-2 p-4">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-slate-800">Modelo de negócio</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-sm font-medium text-ink">Modelo de negócio</p>
+            <p className="text-xs text-muted">
               FV+BESS: carga com energia solar própria (custo ≈ R$0). Standalone: compra e vende no PLD.
             </p>
           </div>
           <label className="flex cursor-pointer items-center gap-2">
-            <span className="text-xs font-medium text-slate-600">
+            <span className="text-xs font-medium text-muted">
               {financeiro.fv_acoplado ? 'FV + BESS' : 'Standalone'}
             </span>
             <input
               type="checkbox"
               checked={financeiro.fv_acoplado}
               onChange={(e) => onChangeFinanceiro({ ...financeiro, fv_acoplado: e.target.checked })}
-              className="h-5 w-9 appearance-none rounded-full bg-slate-300 transition-colors checked:bg-primary relative
+              className="relative h-5 w-9 appearance-none rounded-full bg-line transition-colors checked:bg-accent
                 before:absolute before:left-0.5 before:top-0.5 before:h-4 before:w-4 before:rounded-full
-                before:bg-white before:transition-transform checked:before:translate-x-4"
+                before:bg-ink before:transition-transform checked:before:translate-x-4"
             />
           </label>
         </div>
 
-        <label className="mb-1 block text-xs font-medium text-slate-600">Cenário de preço</label>
+        <label className="mb-1 block text-xs font-medium text-muted">Cenário de preço</label>
         {carregandoCenarios ? (
-          <p className="text-xs text-slate-400">Carregando cenários...</p>
+          <p className="text-xs text-muted-2">Carregando cenários...</p>
         ) : cenarios.length === 0 ? (
-          <p className="text-xs text-amber-700">
+          <p className="text-xs text-warn">
             Nenhum cenário salvo ainda — vá em <a href="/price-scenarios" className="underline">Cenários de preço</a>{' '}
             para fazer upload de um antes de simular.
           </p>
@@ -196,7 +196,7 @@ export default function InputFormArbitragem({
           <select
             value={priceScenarioId}
             onChange={(e) => onChangePriceScenarioId(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+            className="w-full rounded-md border border-line bg-panel-2 text-ink px-3 py-1.5 text-sm focus:border-accent focus:outline-none"
           >
             <option value="">— selecione —</option>
             {cenarios.map((c) => (
@@ -208,7 +208,7 @@ export default function InputFormArbitragem({
         )}
       </div>
 
-      <h2 className="mt-2 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <h2 className="mt-2 text-sm font-semibold uppercase tracking-wide text-muted-2">
         Parâmetros técnicos (física da bateria)
       </h2>
       {SECOES_BESS_ARBITRAGEM.map((secao) =>
@@ -217,7 +217,7 @@ export default function InputFormArbitragem({
         )
       )}
 
-      <h2 className="mt-6 text-sm font-semibold uppercase tracking-wide text-slate-400">
+      <h2 className="mt-6 text-sm font-semibold uppercase tracking-wide text-muted-2">
         Parâmetros financeiros
       </h2>
       {SECOES_FINANCEIRO_ARBITRAGEM.map((secao) =>
