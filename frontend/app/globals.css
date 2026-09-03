@@ -8,6 +8,15 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+/* Cor de destaque padrão do app (verde ZUB) — Utility/C&I sobrescrevem essas
+   3 variáveis localmente (ver lib/segmentTheme.ts) sem precisar de nenhuma
+   classe Tailwind extra nos componentes, que já usam bg-accent/text-accent/etc. */
+:root {
+  --accent: #47D73D;
+  --accent-dark: #38B930;
+  --on-accent: #08210A;
+}
+
 /* Números e dados tabulares em mono, no espírito do relatório de PLD/arbitragem */
 .font-data {
   font-family: var(--font-mono), monospace;

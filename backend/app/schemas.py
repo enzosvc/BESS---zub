@@ -7,7 +7,7 @@ que não fazem parte do input do usuário.
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
@@ -103,6 +103,7 @@ class ConfigFinanceiraInput(BaseModel):
 class SimulacaoInput(BaseModel):
     nome: Optional[str] = Field(None, description="Nome do projeto/cenário, para salvar")
     seed: int = Field(2026, description="Semente aleatória (reprodutibilidade)")
+    segmento: Literal["utility", "cei"] = Field("utility", description="Vertical de negócio do projeto")
     bess: ConfigBESSInput
     financeiro: ConfigFinanceiraInput
 
@@ -187,6 +188,7 @@ class PriceScenarioInput(BaseModel):
 class SimulacaoArbitragemInput(BaseModel):
     nome: Optional[str] = Field(None, description="Nome do projeto/cenário, para salvar")
     seed: int = Field(2026, description="Semente aleatória (reprodutibilidade)")
+    segmento: Literal["utility", "cei"] = Field("utility", description="Vertical de negócio do projeto")
     bess: ConfigBESSInput
     financeiro: ConfigFinanceiraArbitragemInput
     price_scenario_id: str = Field(..., description="ID de um cenário de preço já salvo (POST /api/price-scenarios)")

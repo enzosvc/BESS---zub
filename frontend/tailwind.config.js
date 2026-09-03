@@ -16,9 +16,9 @@ module.exports = {
         muted: '#9BA4C7',     // texto secundário
         'muted-2': '#6A73A0', // texto terciário / placeholder
         primary: '#12183C',   // navy da marca ZUB (mantido — usado em superfícies)
-        accent: '#47D73D',    // verde da marca ZUB — ações e destaques
-        'accent-dark': '#38B930',
-        'on-accent': '#08210A', // texto sobre botão verde
+        accent: 'var(--accent)',           // ZUB verde por padrão; Utility/C&I sobrescrevem via CSS var
+        'accent-dark': 'var(--accent-dark)',
+        'on-accent': 'var(--on-accent)',   // texto sobre botão da cor de destaque
         warn: '#E8A33D',
         bad: '#E2665A',
         good: '#47D73D',

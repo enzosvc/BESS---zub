@@ -62,9 +62,12 @@ def _para_fin_arbitragem(input_fin: ConfigFinanceiraArbitragemInput, prazo_anos:
 # ---------------------------------------------------------------------------
 
 @router.get("/projects")
-def listar_projetos(user_id: str = Depends(obter_usuario_atual)):
+def listar_projetos(segmento: Optional[str] = None, user_id: str = Depends(obter_usuario_atual)):
     supabase = get_supabase()
-    resp = supabase.table("projects").select("*").eq("user_id", user_id).order("updated_at", desc=True).execute()
+    query = supabase.table("projects").select("*").eq("user_id", user_id)
+    if segmento:
+        query = query.eq("segmento", segmento)
+    resp = query.order("updated_at", desc=True).execute()
     return resp.data
 
 
@@ -77,6 +80,7 @@ def criar_projeto(payload: SimulacaoInput, user_id: str = Depends(obter_usuario_
         "user_id": user_id,
         "name": payload.nome or "Novo projeto",
         "seed": payload.seed,
+        "segmento": payload.segmento,
         "business_model": "lrcap",
         "bess_config": payload.bess.model_dump(),
         "financeiro_config": payload.financeiro.model_dump(),
@@ -98,6 +102,7 @@ def criar_projeto_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = D
         "user_id": user_id,
         "name": payload.nome or "Novo projeto de arbitragem",
         "seed": payload.seed,
+        "segmento": payload.segmento,
         "business_model": "arbitragem_fv_bess" if payload.financeiro.fv_acoplado else "arbitragem_standalone",
         "bess_config": payload.bess.model_dump(),
         "financeiro_config": payload.financeiro.model_dump(),

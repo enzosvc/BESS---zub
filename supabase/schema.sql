@@ -46,6 +46,8 @@ create table if not exists public.projects (
     user_id uuid not null references auth.users(id) on delete cascade,
     name text not null default 'Novo projeto',
     seed integer not null default 2026,
+    segmento text not null default 'utility'
+        check (segmento in ('utility', 'cei')),
     business_model text not null default 'lrcap'
         check (business_model in ('lrcap', 'arbitragem_standalone', 'arbitragem_fv_bess')),
     bess_config jsonb not null,
@@ -67,6 +69,21 @@ do $$ begin
             check (business_model in ('lrcap', 'arbitragem_standalone', 'arbitragem_fv_bess'));
     end if;
 end $$;
+
+-- migração idempotente para bancos criados antes dos segmentos Utility/C&I existirem —
+-- o default 'utility' já se aplica automaticamente a toda linha pré-existente
+alter table public.projects add column if not exists segmento text not null default 'utility';
+do $$ begin
+    if not exists (
+        select 1 from pg_constraint where conname = 'projects_segmento_check'
+    ) then
+        alter table public.projects
+            add constraint projects_segmento_check
+            check (segmento in ('utility', 'cei'));
+    end if;
+end $$;
+
+create index if not exists idx_projects_segmento on public.projects(segmento);
 
 create index if not exists idx_projects_user_id on public.projects(user_id);
 create index if not exists idx_projects_price_scenario_id on public.projects(price_scenario_id);

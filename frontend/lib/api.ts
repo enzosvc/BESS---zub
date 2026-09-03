@@ -21,9 +21,10 @@ async function tratarResposta(resp: Response) {
   return resp.json();
 }
 
-export async function listarProjetos() {
+export async function listarProjetos(segmento?: string) {
   const headers = await authHeaders();
-  const resp = await fetch(`${API_URL}/api/projects`, { headers });
+  const query = segmento ? `?segmento=${encodeURIComponent(segmento)}` : '';
+  const resp = await fetch(`${API_URL}/api/projects${query}`, { headers });
   return tratarResposta(resp);
 }
 
