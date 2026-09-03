@@ -51,7 +51,7 @@ export default function ProtectedLayout({
             <div className="h-6 w-px bg-line" />
             <Link
               href="/utility"
-              className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+              className="rounded-md px-3 py-1.5 text-sm font-medium font-mono transition-colors"
               style={{
                 color: emUtility ? corTextoSegmento('utility') : '#9BA4C7',
                 backgroundColor: emUtility ? '#0C447C' : 'transparent',
@@ -61,7 +61,7 @@ export default function ProtectedLayout({
             </Link>
             <Link
               href="/cei"
-              className="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+              className="rounded-md px-3 py-1.5 text-sm font-medium font-mono transition-colors"
               style={{
                 color: emCei ? corTextoSegmento('cei') : '#9BA4C7',
                 backgroundColor: emCei ? '#72243E' : 'transparent',
