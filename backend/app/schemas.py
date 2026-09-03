@@ -166,17 +166,20 @@ class PriceScenarioInput(BaseModel):
     @model_validator(mode="after")
     def valida_completude_dos_anos(self):
         """Todo ano PRECISA ter exatamente 8760 ou 8784 horas (ano completo),
-        EXCETO o último (maior `ano`) — esse pode ser parcial (ex.: o ano
-        corrente, ainda em andamento), desde que tenha pelo menos 1 dia
+        EXCETO o primeiro e o último da série — esses podem ser parciais
+        (o intervalo pode começar e/ou terminar no meio de um ano-calendário,
+        ex.: 'de julho/2024 até hoje'), desde que tenham pelo menos 1 dia
         completo. Um ano incompleto no MEIO da série indica erro de dado
-        real (buraco), não "ainda não acabou" — por isso continua bloqueado."""
+        real (buraco), não "início/fim do intervalo" — por isso continua
+        bloqueado."""
         anos_ordenados = sorted(self.anos, key=lambda a: a.ano)
-        for item in anos_ordenados[:-1]:
+        meio = anos_ordenados[1:-1] if len(anos_ordenados) > 2 else []
+        for item in meio:
             n = len(item.precos_rs_mwh)
             if n not in (8760, 8784):
                 raise ValueError(
                     f"Ano {item.ano} tem {n} horas — precisa ser exatamente 8760 ou 8784 "
-                    f"(ano completo). Só o ÚLTIMO ano da série pode ser parcial."
+                    f"(ano completo). Só o PRIMEIRO e o ÚLTIMO ano da série podem ser parciais."
                 )
         return self
 

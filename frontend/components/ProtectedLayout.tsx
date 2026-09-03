@@ -7,9 +7,20 @@ import Image from 'next/image';
 import { useAuth } from '@/lib/useAuth';
 import { supabase } from '@/lib/supabase';
 
-export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
+export default function ProtectedLayout({
+  children,
+  wide = false,
+}: {
+  children: React.ReactNode;
+  /** Usa um container mais largo (painel de resultados de simulação) em vez
+   * do max-w-6xl padrão — só as páginas que realmente precisam da largura
+   * extra passam essa prop; o resto do app (dashboard, formulários) continua
+   * com o container padrão. */
+  wide?: boolean;
+}) {
   const { session, carregando, usuario } = useAuth();
   const router = useRouter();
+  const larguraContainer = wide ? 'max-w-[1800px]' : 'max-w-6xl';
 
   useEffect(() => {
     if (!carregando && !session) router.replace('/login');
@@ -28,7 +39,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-bg">
       <header className="border-b border-line bg-panel">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <div className={`mx-auto flex ${larguraContainer} items-center justify-between px-4 py-3`}>
           <Link href="/dashboard" className="flex items-center">
             <Image src="/logo-zub.png" alt="ZUB" width={92} height={50} priority />
           </Link>
@@ -43,7 +54,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+      <main className={`mx-auto ${larguraContainer} px-4 py-8`}>{children}</main>
     </div>
   );
 }

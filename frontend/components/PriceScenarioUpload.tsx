@@ -180,20 +180,21 @@ function parseArquivo(texto: string, submercadoAlvo: string): { anos: AnoParsead
 
   const anosCalendarioOrdenados = Array.from(porAnoCalendario.keys()).sort((a, b) => a - b);
 
-  // Todo ano precisa ser completo (8760/8784h), EXCETO o último — esse pode
-  // ser parcial (o caso mais comum: o ano corrente, ainda em andamento no
-  // arquivo consolidado). Um ano incompleto no MEIO da série continua sendo
-  // ignorado, porque indica um buraco de dado real, não "ainda não acabou".
+  // Todo ano precisa ser completo (8760/8784h), EXCETO o primeiro e o último —
+  // o intervalo pode começar e/ou terminar no meio de um ano-calendário (ex.:
+  // "de julho/2024 até hoje"). Um ano incompleto no MEIO da série continua
+  // sendo ignorado, porque indica um buraco de dado real, não uma borda do
+  // intervalo escolhido.
   const ignorados: AnoIgnorado[] = [];
   const completos: { ano_calendario: number; precos: number[]; parcial: boolean }[] = [];
   anosCalendarioOrdenados.forEach((anoCalendario, indice) => {
     const precos = porAnoCalendario.get(anoCalendario)!;
     const esperado = ehBissexto(anoCalendario) ? 8784 : 8760;
-    const ehUltimoDoArquivo = indice === anosCalendarioOrdenados.length - 1;
+    const ehExtremidade = indice === 0 || indice === anosCalendarioOrdenados.length - 1;
 
     if (precos.length === esperado) {
       completos.push({ ano_calendario: anoCalendario, precos, parcial: false });
-    } else if (ehUltimoDoArquivo && precos.length > 0 && precos.length % 24 === 0) {
+    } else if (ehExtremidade && precos.length > 0 && precos.length % 24 === 0) {
       completos.push({ ano_calendario: anoCalendario, precos, parcial: true });
     } else {
       ignorados.push({ ano_calendario: anoCalendario, n_horas: precos.length, n_horas_esperado: esperado });
@@ -340,10 +341,10 @@ export default function PriceScenarioUpload({ onCriado }: { onCriado: (scenario:
         <p className="mt-1 text-xs text-muted-2">
           Pode conter os 4 submercados juntos — só as linhas do submercado escolhido acima entram no
           cenário. O ano simulado (1, 2, 3...) é derivado automaticamente da coluna Data, em ordem
-          cronológica — não precisa numerar nada. O último ano do arquivo pode ser parcial (ex.: o ano
-          corrente, ainda em andamento) — só um ano incompleto no meio da série é rejeitado. Aceita
-          separador <code>,</code> ou <code>;</code>, Data em <code>AAAA-MM-DD</code> ou{' '}
-          <code>DD/MM/AAAA</code>, e decimal com <code>.</code> ou <code>,</code>.
+          cronológica — não precisa numerar nada. O primeiro e o último ano do arquivo podem ser
+          parciais (ex.: começar em julho e ir até hoje) — só um ano incompleto no meio da série é
+          rejeitado. Aceita separador <code>,</code> ou <code>;</code>, Data em <code>AAAA-MM-DD</code>{' '}
+          ou <code>DD/MM/AAAA</code>, e decimal com <code>.</code> ou <code>,</code>.
         </p>
       </div>
 

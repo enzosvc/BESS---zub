@@ -139,7 +139,7 @@ export default function ProjetoPage() {
 
   if (businessModel !== 'lrcap') {
     return (
-      <ProtectedLayout>
+      <ProtectedLayout wide>
         <ProjetoArbitragemView
           projectId={projectId}
           nomeInicial={projetoBruto.name}
@@ -160,7 +160,7 @@ export default function ProjetoPage() {
   }
 
   return (
-    <ProtectedLayout>
+    <ProtectedLayout wide>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <input
           value={nome}
@@ -209,15 +209,20 @@ export default function ProjetoPage() {
             opexFixoCapexRsAno={resultado.resultado_financeiro.opex_fixo_capex_rs_ano}
           />
 
-          <PerfilOrdensChart series={resultado.perfil_ordens.series} />
-          <CapacidadeChart trajetoria={resultado.trajetoria_15_anos} />
-          <FluxoCaixaChart fluxoCaixaRs={resultado.fluxo_caixa_rs} />
-          <TabelaTecnicaAnual
-            trajetoria={resultado.trajetoria_15_anos}
-            detalhamentoCustos={resultado.detalhamento_custos}
-          />
-          <BidTirChart dados={resultado.sensibilidade_bid} waccPctAa={resultado.resultado_financeiro.wacc_pct_aa} />
-          <TabelaSensibilidadeBid dados={resultado.sensibilidade_bid} />
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <PerfilOrdensChart series={resultado.perfil_ordens.series} />
+            <CapacidadeChart trajetoria={resultado.trajetoria_15_anos} />
+            <FluxoCaixaChart fluxoCaixaRs={resultado.fluxo_caixa_rs} />
+            <BidTirChart dados={resultado.sensibilidade_bid} waccPctAa={resultado.resultado_financeiro.wacc_pct_aa} />
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <TabelaTecnicaAnual
+              trajetoria={resultado.trajetoria_15_anos}
+              detalhamentoCustos={resultado.detalhamento_custos}
+            />
+            <TabelaSensibilidadeBid dados={resultado.sensibilidade_bid} />
+          </div>
 
           <div className="rounded-lg border border-line bg-panel p-4">
             <div className="mb-3 flex items-center justify-between">

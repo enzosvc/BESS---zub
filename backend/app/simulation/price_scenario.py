@@ -41,8 +41,10 @@ def construir_precos_por_ano(precos_por_ano_raw: Dict[str, List[float]],
                               prazo_anos: int) -> Dict[int, pd.DataFrame]:
     """
     precos_por_ano_raw: como vem do banco — chaves string ("1", "2", ...),
-    valores = lista de preços horários (múltiplo de 24; o último ano do
-    cenário pode ser parcial, ex.: o ano corrente ainda em andamento).
+    valores = lista de preços horários (múltiplo de 24; o PRIMEIRO e o ÚLTIMO
+    ano do cenário podem ser parciais — o intervalo pode começar e/ou terminar
+    no meio de um ano-calendário, ex.: "de julho/2024 até hoje"). Anos no meio
+    da série precisam ser completos (8760/8784h).
 
     NÃO cicla mais o cenário para preencher `prazo_anos`. O horizonte efetivo
     da análise é `min(prazo_anos, anos disponíveis no cenário)` — se o cenário
@@ -52,18 +54,20 @@ def construir_precos_por_ano(precos_por_ano_raw: Dict[str, List[float]],
     `engine_arbitragem.rodar_simulacao_arbitragem` (ver `horizonte_efetivo_anos`
     no resultado da simulação).
 
-    Se o ano parcial for de fato usado (não truncado antes de chegar nele), o
-    motor não extrapola: o resultado desse ano reflete só os dias realmente
-    presentes, sem inflar pra parecer um ano cheio (ver annual.py — o fator de
-    anualização fica em 1x para o motor de arbitragem, com ou sem ano parcial).
+    Se um ano parcial for de fato usado (não truncado antes/depois de chegar
+    nele), o motor não extrapola: o resultado desse ano reflete só os dias
+    realmente presentes, sem inflar pra parecer um ano cheio (ver annual.py —
+    o fator de anualização fica em 1x para o motor de arbitragem, com ou sem
+    ano parcial).
     """
     if not precos_por_ano_raw:
         raise CenarioPrecoInvalido("Cenário de preço vazio — nenhum ano informado.")
 
     anos_ordenados = sorted(precos_por_ano_raw.keys(), key=lambda k: int(k))
+    n = len(anos_ordenados)
     for indice, chave in enumerate(anos_ordenados):
-        eh_ultimo_do_cenario = indice == len(anos_ordenados) - 1
-        validar_lista_precos_ano(precos_por_ano_raw[chave], chave, permitir_parcial=eh_ultimo_do_cenario)
+        eh_extremidade = indice == 0 or indice == n - 1
+        validar_lista_precos_ano(precos_por_ano_raw[chave], chave, permitir_parcial=eh_extremidade)
 
     anos_usados = anos_ordenados[:prazo_anos]  # trunca; nunca cicla
 

@@ -142,10 +142,12 @@ export default function ProjetoArbitragemView({
             modeloNegocio={resultado.modelo_negocio}
           />
 
-          <DespachoPrecoChart series={resultado.perfil_ordens.series} />
-          <ReceitaAnualChart trajetoria={resultado.trajetoria_15_anos} />
-          <CapacidadeChart trajetoria={resultado.trajetoria_15_anos} />
-          <FluxoCaixaChart fluxoCaixaRs={resultado.fluxo_caixa_rs} />
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <DespachoPrecoChart series={resultado.perfil_ordens.series} />
+            <ReceitaAnualChart trajetoria={resultado.trajetoria_15_anos} />
+            <CapacidadeChart trajetoria={resultado.trajetoria_15_anos} />
+            <FluxoCaixaChart fluxoCaixaRs={resultado.fluxo_caixa_rs} />
+          </div>
         </div>
       )}
     </>
