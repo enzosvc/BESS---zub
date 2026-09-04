@@ -59,61 +59,62 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
 
   return (
     <ProtectedLayout segmento={segmento}>
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-ink">Meus projetos — {ROTULO_SEGMENTO[segmento]}</h1>
-          <div className="flex gap-2">
-            {segmento === 'utility' && (
-              <Link
-                href={`/projects/new?segmento=${segmento}`}
-                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
-              >
-                + LRCAP
-              </Link>
-            )}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-semibold text-ink">Meus projetos — {ROTULO_SEGMENTO[segmento]}</h1>
+        <div className="flex gap-2">
+          {segmento === 'utility' && (
             <Link
-              href={`/projects/new-arbitragem?segmento=${segmento}`}
+              href={`/projects/new?segmento=${segmento}`}
               className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
             >
-              {rotuloArbitragem}
+              + LRCAP
             </Link>
-          </div>
+          )}
+          <Link
+            href={`/projects/new-arbitragem?segmento=${segmento}`}
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
+          >
+            {rotuloArbitragem}
+          </Link>
         </div>
+      </div>
 
-        {carregando && <p className="text-sm text-muted">Carregando...</p>}
-        {erro && <p className="text-sm text-bad">{erro}</p>}
+      {carregando && <p className="text-sm text-muted">Carregando...</p>}
+      {erro && <p className="text-sm text-bad">{erro}</p>}
 
-        {!carregando && projetos.length === 0 && (
-          <div className="rounded-lg border border-dashed border-line bg-panel p-10 text-center text-sm text-muted">
-            Nenhum projeto de {ROTULO_SEGMENTO[segmento]} ainda. Clique em{' '}
-            {segmento === 'utility' && (
-              <>
-                <strong>+ LRCAP</strong> ou{' '}
-              </>
-            )}
-            <strong>{rotuloArbitragem}</strong> pra começar.
-          </div>
-        )}
+      {!carregando && projetos.length === 0 && (
+        <div className="rounded-lg border border-dashed border-line bg-panel p-10 text-center text-sm text-muted">
+          Nenhum projeto de {ROTULO_SEGMENTO[segmento]} ainda. Clique em{' '}
+          {segmento === 'utility' && (
+            <>
+              <strong>+ LRCAP</strong> ou{' '}
+            </>
+          )}
+          <strong>{rotuloArbitragem}</strong> pra começar.
+        </div>
+      )}
 
-        <div className="grid gap-3">
-          {projetos.map((p) => (
-            <div
-              key={p.id}
-              className="flex items-center justify-between rounded-lg border border-line bg-panel px-5 py-4 shadow-sm"
-            >
-              <div>
-                <div className="flex items-center gap-2">
-                  <Link href={`/projects/${p.id}`} className="font-medium text-ink hover:text-accent">
-                    {p.name}
-                  </Link>
-                  <BadgeModelo modelo={p.business_model} />
-                </div>
-                <p className="text-xs text-muted-2">Atualizado em {new Date(p.updated_at).toLocaleString('pt-BR')}</p>
+      <div className="grid gap-3">
+        {projetos.map((p) => (
+          <div
+            key={p.id}
+            className="flex items-center justify-between rounded-lg border border-line bg-panel px-5 py-4 shadow-sm"
+          >
+            <div>
+              <div className="flex items-center gap-2">
+                <Link href={`/projects/${p.id}`} className="font-medium text-ink hover:text-accent">
+                  {p.name}
+                </Link>
+                <BadgeModelo modelo={p.business_model} />
               </div>
-              <button onClick={() => handleExcluir(p.id, p.name)} className="text-sm text-bad hover:underline">
-                Excluir
-              </button>
+              <p className="text-xs text-muted-2">Atualizado em {new Date(p.updated_at).toLocaleString('pt-BR')}</p>
             </div>
-          ))}
-        </div>
+            <button onClick={() => handleExcluir(p.id, p.name)} className="text-sm text-bad hover:underline">
+              Excluir
+            </button>
+          </div>
+        ))}
+      </div>
     </ProtectedLayout>
-  );}
+  );
+}

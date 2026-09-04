@@ -8,7 +8,7 @@ no formulário do frontend (ver `frontend/lib/inputSchema.ts`).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Tuple
 
 
