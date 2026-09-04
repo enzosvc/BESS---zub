@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ProtectedLayout from '@/components/ProtectedLayout';
 import { listarProjetos, excluirProjeto } from '@/lib/api';
-import { Segmento, ROTULO_SEGMENTO, estiloTemaSegmento } from '@/lib/segmentTheme';
+import { Segmento, ROTULO_SEGMENTO } from '@/lib/segmentTheme';
 
 interface Projeto {
   id: string;
@@ -56,8 +56,7 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
   }
 
   return (
-    <ProtectedLayout>
-      <div style={estiloTemaSegmento(segmento)}>
+    <ProtectedLayout segmento={segmento}>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-ink">Meus projetos — {ROTULO_SEGMENTO[segmento]}</h1>
           <div className="flex gap-2">
@@ -107,7 +106,5 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
             </div>
           ))}
         </div>
-      </div>
     </ProtectedLayout>
-  );
-}
+  );}

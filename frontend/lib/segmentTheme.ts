@@ -11,13 +11,14 @@ export const ROTULO_SEGMENTO: Record<Segmento, string> = {
 // (ver globals.css e tailwind.config.js) só dentro do container que as aplica.
 // Todo componente que já usa bg-accent/text-accent/border-accent (botões, cards,
 // inputs) muda de cor automaticamente, sem precisar editar cada um.
-const CORES_SEGMENTO: Record<Segmento, { accent: string; accentDark: string; onAccent: string; texto: string; borda: string }> = {
+const CORES_SEGMENTO: Record<Segmento, { accent: string; accentDark: string; onAccent: string; texto: string; borda: string; fundo: string }> = {
   utility: {
     accent: '#378ADD',      // azul claro
     accentDark: '#2568AC',
     onAccent: '#042C53',
     texto: '#85B7EB',
     borda: '#185FA5',
+    fundo: '#0F1A33',       // mesmo tom já usado no bloco Utility do dashboard
   },
   cei: {
     accent: '#E8822E',      // laranja
@@ -25,6 +26,7 @@ const CORES_SEGMENTO: Record<Segmento, { accent: string; accentDark: string; onA
     onAccent: '#3A1D02',
     texto: '#F5B27A',
     borda: '#B85F1F',
+    fundo: '#2A1D0F',       // mesmo tom já usado no bloco C&I do dashboard
   },
 };
 
@@ -45,4 +47,8 @@ export function corTextoSegmento(segmento: Segmento): string {
 
 export function corBordaSegmento(segmento: Segmento): string {
   return CORES_SEGMENTO[segmento].borda;
+}
+
+export function corFundoSegmento(segmento: Segmento): string {
+  return CORES_SEGMENTO[segmento].fundo;
 }

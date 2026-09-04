@@ -14,7 +14,7 @@ import TabelaSensibilidadeBid from '@/components/TabelaSensibilidadeBid';
 import BidTirChart from '@/components/charts/BidTirChart';
 import ProjetoArbitragemView from '@/components/ProjetoArbitragemView';
 import { ConfigBESS, ConfigFinanceira } from '@/lib/inputSchema';
-import { Segmento, estiloTemaSegmento } from '@/lib/segmentTheme';
+import { Segmento } from '@/lib/segmentTheme';
 import {
   obterProjeto,
   atualizarProjeto,
@@ -145,16 +145,14 @@ export default function ProjetoPage() {
 
   if (businessModel !== 'lrcap') {
     return (
-      <ProtectedLayout wide>
-        <div style={estiloTemaSegmento((projetoBruto.segmento ?? 'utility') as Segmento)}>
-          <ProjetoArbitragemView
-            projectId={projectId}
-            nomeInicial={projetoBruto.name}
-            bessInicial={projetoBruto.bess_config}
-            financeiroInicial={projetoBruto.financeiro_config}
-            priceScenarioIdInicial={projetoBruto.price_scenario_id ?? ''}
-          />
-        </div>
+      <ProtectedLayout wide segmento={(projetoBruto.segmento ?? 'utility') as Segmento}>
+        <ProjetoArbitragemView
+          projectId={projectId}
+          nomeInicial={projetoBruto.name}
+          bessInicial={projetoBruto.bess_config}
+          financeiroInicial={projetoBruto.financeiro_config}
+          priceScenarioIdInicial={projetoBruto.price_scenario_id ?? ''}
+        />
       </ProtectedLayout>
     );
   }
@@ -168,8 +166,7 @@ export default function ProjetoPage() {
   }
 
   return (
-    <ProtectedLayout wide>
-      <div style={estiloTemaSegmento((projetoBruto?.segmento ?? 'utility') as Segmento)}>
+    <ProtectedLayout wide segmento={(projetoBruto?.segmento ?? 'utility') as Segmento}>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <input
           value={nome}
@@ -268,7 +265,6 @@ export default function ProjetoPage() {
           </div>
         </div>
       )}
-      </div>
     </ProtectedLayout>
   );
 }

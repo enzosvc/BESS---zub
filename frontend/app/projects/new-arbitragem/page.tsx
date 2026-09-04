@@ -11,7 +11,7 @@ import {
   ConfigFinanceiraArbitragem,
 } from '@/lib/inputSchema';
 import { criarProjetoArbitragem } from '@/lib/api';
-import { Segmento, ROTULO_SEGMENTO, estiloTemaSegmento } from '@/lib/segmentTheme';
+import { Segmento, ROTULO_SEGMENTO } from '@/lib/segmentTheme';
 
 function NovoProjetoArbitragemConteudo() {
   const searchParams = useSearchParams();
@@ -50,40 +50,38 @@ function NovoProjetoArbitragemConteudo() {
   }
 
   return (
-    <ProtectedLayout>
-      <div style={estiloTemaSegmento(segmento)}>
-        <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-2">
-          Novo projeto de arbitragem — {ROTULO_SEGMENTO[segmento]}
-        </p>
-        <div className="mb-6">
-          <label className="mb-1 block text-xs font-medium text-muted">Nome do projeto</label>
-          <input
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            className="w-full max-w-md rounded-md border border-line bg-panel-2 text-ink px-3 py-2 text-sm focus:border-accent focus:outline-none"
-          />
-        </div>
-
-        <InputFormArbitragem
-          bess={bess}
-          financeiro={financeiro}
-          priceScenarioId={priceScenarioId}
-          onChangeBess={setBess}
-          onChangeFinanceiro={setFinanceiro}
-          onChangePriceScenarioId={setPriceScenarioId}
+    <ProtectedLayout segmento={segmento}>
+      <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-2">
+        Novo projeto de arbitragem — {ROTULO_SEGMENTO[segmento]}
+      </p>
+      <div className="mb-6">
+        <label className="mb-1 block text-xs font-medium text-muted">Nome do projeto</label>
+        <input
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          className="w-full max-w-md rounded-md border border-line bg-panel-2 text-ink px-3 py-2 text-sm focus:border-accent focus:outline-none"
         />
+      </div>
 
-        {erro && <p className="mt-4 text-sm text-bad">{erro}</p>}
+      <InputFormArbitragem
+        bess={bess}
+        financeiro={financeiro}
+        priceScenarioId={priceScenarioId}
+        onChangeBess={setBess}
+        onChangeFinanceiro={setFinanceiro}
+        onChangePriceScenarioId={setPriceScenarioId}
+      />
 
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={handleSalvar}
-            disabled={salvando}
-            className="rounded-md bg-accent px-5 py-2 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50"
-          >
-            {salvando ? 'Salvando...' : 'Salvar e abrir projeto'}
-          </button>
-        </div>
+      {erro && <p className="mt-4 text-sm text-bad">{erro}</p>}
+
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={handleSalvar}
+          disabled={salvando}
+          className="rounded-md bg-accent px-5 py-2 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50"
+        >
+          {salvando ? 'Salvando...' : 'Salvar e abrir projeto'}
+        </button>
       </div>
     </ProtectedLayout>
   );

@@ -6,11 +6,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/lib/useAuth';
 import { supabase } from '@/lib/supabase';
-import { corTextoSegmento } from '@/lib/segmentTheme';
+import { Segmento, corTextoSegmento, corFundoSegmento, estiloTemaSegmento } from '@/lib/segmentTheme';
 
 export default function ProtectedLayout({
   children,
   wide = false,
+  segmento,
 }: {
   children: React.ReactNode;
   /** Usa um container mais largo (painel de resultados de simulação) em vez
@@ -18,6 +19,9 @@ export default function ProtectedLayout({
    * extra passam essa prop; o resto do app (dashboard, formulários) continua
    * com o container padrão. */
   wide?: boolean;
+  /** Quando informado, pinta o fundo da área de conteúdo (abaixo do
+   * cabeçalho, que continua neutro) com o tom do segmento — Utility ou C&I. */
+  segmento?: Segmento;
 }) {
   const { session, carregando, usuario } = useAuth();
   const router = useRouter();
@@ -42,7 +46,7 @@ export default function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg" style={segmento ? { backgroundColor: corFundoSegmento(segmento) } : undefined}>
       <header className="border-b border-line bg-panel">
         <div className="flex w-full items-center justify-between px-6 py-3">
           <div className="flex items-center gap-5">
@@ -92,7 +96,12 @@ export default function ProtectedLayout({
           </div>
         </div>
       </header>
-      <main className={`mx-auto ${larguraContainer} px-4 py-8`}>{children}</main>
+      <main
+        className={`mx-auto ${larguraContainer} px-4 py-8`}
+        style={segmento ? estiloTemaSegmento(segmento) : undefined}
+      >
+        {children}
+      </main>
     </div>
   );
 }
