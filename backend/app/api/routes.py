@@ -293,6 +293,27 @@ def simular_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = Depends
     return _rodar_simulacao_arbitragem_ou_erro_400(cfg, fin, cenario["precos_por_ano"], payload.seed)
 
 
+@router.get("/projects/{project_id}/latest-result")
+def obter_ultimo_resultado(project_id: str, user_id: str = Depends(obter_usuario_atual)):
+    """Devolve o resultado da última simulação já rodada e salva pra esse
+    projeto (mesmo formato de POST /simulate) — ou 404 se nunca rodou nenhuma.
+    Usado pelo frontend pra já mostrar o resultado ao abrir um projeto
+    existente, sem precisar rodar de novo."""
+    _buscar_projeto_do_usuario(project_id, user_id)  # 404/403 se não for dono
+    supabase = get_supabase()
+    resp = (
+        supabase.table("simulation_results")
+        .select("result, created_at")
+        .eq("project_id", project_id)
+        .order("created_at", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if not resp.data:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Esse projeto ainda não tem nenhuma simulação salva.")
+    return resp.data[0]["result"]
+
+
 @router.post("/projects/{project_id}/simulate")
 def simular_projeto_salvo(project_id: str, background_tasks: BackgroundTasks,
                            user_id: str = Depends(obter_usuario_atual)):

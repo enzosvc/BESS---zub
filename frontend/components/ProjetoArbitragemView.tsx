@@ -8,7 +8,7 @@ import FluxoCaixaChart from '@/components/charts/FluxoCaixaChart';
 import DespachoPrecoChart from '@/components/charts/DespachoPrecoChart';
 import ReceitaAnualChart from '@/components/charts/ReceitaAnualChart';
 import { ConfigBESS, ConfigFinanceiraArbitragem } from '@/lib/inputSchema';
-import { atualizarProjetoArbitragem, simularProjeto } from '@/lib/api';
+import { atualizarProjetoArbitragem, simularProjeto, obterUltimoResultado } from '@/lib/api';
 
 /**
  * Visão de detalhe de um projeto de ARBITRAGEM (standalone ou FV+BESS) —
@@ -40,6 +40,13 @@ export default function ProjetoArbitragemView({
   const [simulando, setSimulando] = useState(false);
   const [resultado, setResultado] = useState<any>(null);
   const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    // já mostra a última simulação salva, sem precisar clicar em "Rodar" de novo
+    obterUltimoResultado(projectId)
+      .then((r) => r && setResultado(r))
+      .catch(() => {}); // projeto novo, sem simulação ainda — não é erro
+  }, [projectId]);
 
   async function handleSalvar() {
     setSalvando(true);

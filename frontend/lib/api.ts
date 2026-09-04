@@ -85,6 +85,16 @@ export async function simularProjeto(projectId: string) {
   return tratarResposta(resp);
 }
 
+/** Busca o resultado da última simulação já salva pra esse projeto, sem
+ * rodar uma nova. Retorna null se o projeto ainda não tem nenhuma simulação
+ * (em vez de lançar erro — é um estado normal pra um projeto recém-criado). */
+export async function obterUltimoResultado(projectId: string) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/projects/${projectId}/latest-result`, { headers });
+  if (resp.status === 404) return null;
+  return tratarResposta(resp);
+}
+
 /** Dispara o job assíncrono de sensibilidade (Bloco 8.2, ~90s) e devolve { job_id }. */
 export async function iniciarSensibilidade(projectId: string, bidEquilibrioRsAno?: number) {
   const headers = await authHeaders();

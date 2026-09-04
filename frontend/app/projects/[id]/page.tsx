@@ -19,6 +19,7 @@ import {
   obterProjeto,
   atualizarProjeto,
   simularProjeto,
+  obterUltimoResultado,
   iniciarSensibilidade,
   obterStatusSensibilidade,
 } from '@/lib/api';
@@ -56,6 +57,10 @@ export default function ProjetoPage() {
         if (p.business_model === 'lrcap') {
           setBess(p.bess_config);
           setFinanceiro(p.financeiro_config);
+          // já mostra a última simulação salva, sem precisar clicar em "Rodar" de novo
+          obterUltimoResultado(projectId)
+            .then((r) => r && setResultado(r))
+            .catch(() => {}); // projeto novo, sem simulação ainda — não é erro
         }
       })
       .catch((err) => setErro(err instanceof Error ? err.message : 'Erro ao carregar projeto.'))
