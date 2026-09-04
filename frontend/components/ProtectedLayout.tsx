@@ -43,7 +43,7 @@ export default function ProtectedLayout({
   return (
     <div className="min-h-screen bg-bg">
       <header className="border-b border-line bg-panel">
-        <div className={`mx-auto flex ${larguraContainer} items-center justify-between px-4 py-3`}>
+        <div className="flex w-full items-center justify-between px-6 py-3">
           <div className="flex items-center gap-5">
             <Link href="/dashboard" className="flex items-center">
               <Image src="/logo-zub.png" alt="ZUB" width={92} height={50} priority />
