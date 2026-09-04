@@ -62,14 +62,8 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
           <h1 className="text-xl font-semibold text-ink">Meus projetos — {ROTULO_SEGMENTO[segmento]}</h1>
           <div className="flex gap-2">
             <Link
-              href="/price-scenarios"
-              className="rounded-md border border-line bg-panel px-4 py-2 text-sm font-medium text-ink hover:bg-panel-2"
-            >
-              Cenários de preço
-            </Link>
-            <Link
               href={`/projects/new?segmento=${segmento}`}
-              className="rounded-md border border-line bg-panel px-4 py-2 text-sm font-medium text-ink hover:bg-panel-2"
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
             >
               + LRCAP
             </Link>

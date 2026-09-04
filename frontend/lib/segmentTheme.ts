@@ -20,11 +20,11 @@ const CORES_SEGMENTO: Record<Segmento, { accent: string; accentDark: string; onA
     borda: '#185FA5',
   },
   cei: {
-    accent: '#E24B4A',      // vermelho
-    accentDark: '#B23837',
-    onAccent: '#501313',
-    texto: '#F09595',
-    borda: '#A32D2D',
+    accent: '#E8822E',      // laranja
+    accentDark: '#C36A1E',
+    onAccent: '#3A1D02',
+    texto: '#F5B27A',
+    borda: '#B85F1F',
   },
 };
 

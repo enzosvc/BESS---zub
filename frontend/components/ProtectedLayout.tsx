@@ -25,6 +25,7 @@ export default function ProtectedLayout({
   const larguraContainer = wide ? 'max-w-[1800px]' : 'max-w-6xl';
   const emUtility = pathname?.startsWith('/utility');
   const emCei = pathname?.startsWith('/cei');
+  const emPrecos = pathname?.startsWith('/price-scenarios');
 
   useEffect(() => {
     if (!carregando && !session) router.replace('/login');
@@ -64,10 +65,20 @@ export default function ProtectedLayout({
               className="rounded-md px-3 py-1.5 text-sm font-medium font-mono transition-colors hover:!text-accent"
               style={{
                 color: emCei ? corTextoSegmento('cei') : '#9BA4C7',
-                backgroundColor: emCei ? '#72243E' : 'transparent',
+                backgroundColor: emCei ? '#5C3210' : 'transparent',
               }}
             >
               C&amp;I
+            </Link>
+            <Link
+              href="/price-scenarios"
+              className="rounded-md px-3 py-1.5 text-sm font-medium font-mono transition-colors hover:!text-accent"
+              style={{
+                color: emPrecos ? '#47D73D' : '#9BA4C7',
+                backgroundColor: emPrecos ? '#123B12' : 'transparent',
+              }}
+            >
+              Cenários de preço
             </Link>
           </div>
           <div className="flex items-center gap-4 font-mono text-sm text-muted">

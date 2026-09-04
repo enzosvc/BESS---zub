@@ -119,9 +119,9 @@ export default function DashboardPage() {
           <Link
             href="/cei"
             className="rounded-lg border p-6 transition-colors hover:bg-panel-2"
-            style={{ borderColor: 'rgba(226,75,74,0.4)', backgroundColor: '#2A1315' }}
+            style={{ borderColor: 'rgba(232,130,46,0.4)', backgroundColor: '#2A1D0F' }}
           >
-            <div className="flex items-center gap-4" style={{ color: '#E24B4A' }}>
+            <div className="flex items-center gap-4" style={{ color: '#E8822E' }}>
               <IconCasa className="h-7 w-7" />
               <IconComercio className="h-7 w-7" />
               <IconIndustria className="h-7 w-7" />
