@@ -110,7 +110,7 @@ export default function DashboardPage() {
             <div className="mt-4 flex items-center justify-between">
               <div className="flex gap-2">
                 <span className="rounded border border-line px-2 py-0.5 font-mono text-[11px] text-muted-2">LRCAP</span>
-                <span className="rounded border border-line px-2 py-0.5 font-mono text-[11px] text-muted-2">Arbitragem</span>
+                <span className="rounded border border-line px-2 py-0.5 font-mono text-[11px] text-muted-2">Autônomo / Colocalizado</span>
               </div>
               <span className="font-mono text-[11px] text-muted-2">{rotuloContagem(contagens.utility)}</span>
             </div>
@@ -132,7 +132,6 @@ export default function DashboardPage() {
             </p>
             <div className="mt-4 flex items-center justify-between">
               <div className="flex gap-2">
-                <span className="rounded border border-line px-2 py-0.5 font-mono text-[11px] text-muted-2">LRCAP</span>
                 <span className="rounded border border-line px-2 py-0.5 font-mono text-[11px] text-muted-2">Arbitragem</span>
               </div>
               <span className="font-mono text-[11px] text-muted-2">{rotuloContagem(contagens.cei)}</span>

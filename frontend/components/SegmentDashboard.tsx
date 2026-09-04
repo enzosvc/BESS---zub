@@ -55,22 +55,26 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
     }
   }
 
+  const rotuloArbitragem = segmento === 'utility' ? '+ Autônomo / Colocalizado' : '+ Arbitragem';
+
   return (
     <ProtectedLayout segmento={segmento}>
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-ink">Meus projetos — {ROTULO_SEGMENTO[segmento]}</h1>
           <div className="flex gap-2">
-            <Link
-              href={`/projects/new?segmento=${segmento}`}
-              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
-            >
-              + LRCAP
-            </Link>
+            {segmento === 'utility' && (
+              <Link
+                href={`/projects/new?segmento=${segmento}`}
+                className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
+              >
+                + LRCAP
+              </Link>
+            )}
             <Link
               href={`/projects/new-arbitragem?segmento=${segmento}`}
               className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
             >
-              + Arbitragem
+              {rotuloArbitragem}
             </Link>
           </div>
         </div>
@@ -80,8 +84,13 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
 
         {!carregando && projetos.length === 0 && (
           <div className="rounded-lg border border-dashed border-line bg-panel p-10 text-center text-sm text-muted">
-            Nenhum projeto de {ROTULO_SEGMENTO[segmento]} ainda. Clique em <strong>+ LRCAP</strong> ou{' '}
-            <strong>+ Arbitragem</strong> pra começar.
+            Nenhum projeto de {ROTULO_SEGMENTO[segmento]} ainda. Clique em{' '}
+            {segmento === 'utility' && (
+              <>
+                <strong>+ LRCAP</strong> ou{' '}
+              </>
+            )}
+            <strong>{rotuloArbitragem}</strong> pra começar.
           </div>
         )}
 
