@@ -8,6 +8,7 @@ import FluxoCaixaChart from '@/components/charts/FluxoCaixaChart';
 import DespachoPrecoChart from '@/components/charts/DespachoPrecoChart';
 import ReceitaAnualChart from '@/components/charts/ReceitaAnualChart';
 import { ConfigBESS, ConfigFinanceiraArbitragem } from '@/lib/inputSchema';
+import { Segmento } from '@/lib/segmentTheme';
 import { atualizarProjetoArbitragem, simularProjeto, obterUltimoResultado } from '@/lib/api';
 
 /**
@@ -23,6 +24,7 @@ interface Props {
   bessInicial: ConfigBESS;
   financeiroInicial: ConfigFinanceiraArbitragem;
   priceScenarioIdInicial: string;
+  segmento: Segmento;
 }
 
 export default function ProjetoArbitragemView({
@@ -31,10 +33,16 @@ export default function ProjetoArbitragemView({
   bessInicial,
   financeiroInicial,
   priceScenarioIdInicial,
+  segmento,
 }: Props) {
   const [nome, setNome] = useState(nomeInicial);
   const [bess, setBess] = useState<ConfigBESS>(bessInicial);
-  const [financeiro, setFinanceiro] = useState<ConfigFinanceiraArbitragem>(financeiroInicial);
+  const [financeiro, setFinanceiro] = useState<ConfigFinanceiraArbitragem>({
+    ...financeiroInicial,
+    // Autônomo (Utility) é necessariamente standalone — corrige projeto antigo
+    // que porventura tenha sido salvo como FV+BESS antes dessa mudança.
+    fv_acoplado: segmento === 'utility' ? false : financeiroInicial.fv_acoplado,
+  });
   const [priceScenarioId, setPriceScenarioId] = useState(priceScenarioIdInicial);
   const [salvando, setSalvando] = useState(false);
   const [simulando, setSimulando] = useState(false);
@@ -118,6 +126,7 @@ export default function ProjetoArbitragemView({
             bess={bess}
             financeiro={financeiro}
             priceScenarioId={priceScenarioId}
+            segmento={segmento}
             onChangeBess={setBess}
             onChangeFinanceiro={setFinanceiro}
             onChangePriceScenarioId={setPriceScenarioId}

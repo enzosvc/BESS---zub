@@ -10,6 +10,7 @@ import {
   CampoMetaArbitragem,
 } from '@/lib/inputSchema';
 import { listarPriceScenarios } from '@/lib/api';
+import { Segmento } from '@/lib/segmentTheme';
 
 interface CenarioOpcao {
   id: string;
@@ -22,6 +23,7 @@ interface Props {
   bess: ConfigBESS;
   financeiro: ConfigFinanceiraArbitragem;
   priceScenarioId: string;
+  segmento: Segmento;
   onChangeBess: (novo: ConfigBESS) => void;
   onChangeFinanceiro: (novo: ConfigFinanceiraArbitragem) => void;
   onChangePriceScenarioId: (id: string) => void;
@@ -91,6 +93,7 @@ export default function InputFormArbitragem({
   bess,
   financeiro,
   priceScenarioId,
+  segmento,
   onChangeBess,
   onChangeFinanceiro,
   onChangePriceScenarioId,
@@ -104,6 +107,17 @@ export default function InputFormArbitragem({
       .then(setCenarios)
       .finally(() => setCarregandoCenarios(false));
   }, []);
+
+  // Autônomo (Utility) é necessariamente standalone — o FV+BESS (carga "grátis"
+  // sem checar geração real) foi substituído pelo modelo Colocalizado, que usa
+  // a geração de verdade via UGC. Corrige qualquer estado antigo (ex.: projeto
+  // criado antes dessa mudança) assim que o formulário abre.
+  useEffect(() => {
+    if (segmento === 'utility' && financeiro.fv_acoplado) {
+      onChangeFinanceiro({ ...financeiro, fv_acoplado: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [segmento]);
 
   function atualizarCampoBess(chave: keyof ConfigBESS, valor: number | number[]) {
     onChangeBess({ ...bess, [chave]: valor });
@@ -166,22 +180,28 @@ export default function InputFormArbitragem({
           <div>
             <p className="text-sm font-medium text-ink">Modelo de negócio</p>
             <p className="text-xs text-muted">
-              FV+BESS: carga com energia solar própria (custo ≈ R$0). Standalone: compra e vende no PLD.
+              {segmento === 'utility'
+                ? 'Autônomo é sempre Standalone (compra e vende no PLD) — pra carga com geração real de uma usina, use Colocalizado.'
+                : 'FV+BESS: carga com energia solar própria (custo ≈ R$0). Standalone: compra e vende no PLD.'}
             </p>
           </div>
-          <label className="flex cursor-pointer items-center gap-2">
-            <span className="text-xs font-medium text-muted">
-              {financeiro.fv_acoplado ? 'FV + BESS' : 'Standalone'}
-            </span>
-            <input
-              type="checkbox"
-              checked={financeiro.fv_acoplado}
-              onChange={(e) => onChangeFinanceiro({ ...financeiro, fv_acoplado: e.target.checked })}
-              className="relative h-5 w-9 appearance-none rounded-full bg-line transition-colors checked:bg-accent
-                before:absolute before:left-0.5 before:top-0.5 before:h-4 before:w-4 before:rounded-full
-                before:bg-ink before:transition-transform checked:before:translate-x-4"
-            />
-          </label>
+          {segmento === 'utility' ? (
+            <span className="rounded-full bg-panel px-3 py-1 text-xs font-medium text-muted">Standalone</span>
+          ) : (
+            <label className="flex cursor-pointer items-center gap-2">
+              <span className="text-xs font-medium text-muted">
+                {financeiro.fv_acoplado ? 'FV + BESS' : 'Standalone'}
+              </span>
+              <input
+                type="checkbox"
+                checked={financeiro.fv_acoplado}
+                onChange={(e) => onChangeFinanceiro({ ...financeiro, fv_acoplado: e.target.checked })}
+                className="relative h-5 w-9 appearance-none rounded-full bg-line transition-colors checked:bg-accent
+                  before:absolute before:left-0.5 before:top-0.5 before:h-4 before:w-4 before:rounded-full
+                  before:bg-ink before:transition-transform checked:before:translate-x-4"
+              />
+            </label>
+          )}
         </div>
 
         <label className="mb-1 block text-xs font-medium text-muted">Cenário de preço</label>

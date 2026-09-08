@@ -20,7 +20,10 @@ function NovoProjetoArbitragemConteudo() {
 
   const [nome, setNome] = useState(`Novo projeto ${rotuloModelo}`);
   const [bess, setBess] = useState<ConfigBESS>(CONFIG_BESS_ARBITRAGEM_DEFAULT);
-  const [financeiro, setFinanceiro] = useState<ConfigFinanceiraArbitragem>(CONFIG_FINANCEIRA_ARBITRAGEM_DEFAULT);
+  const [financeiro, setFinanceiro] = useState<ConfigFinanceiraArbitragem>({
+    ...CONFIG_FINANCEIRA_ARBITRAGEM_DEFAULT,
+    fv_acoplado: segmento === 'utility' ? false : CONFIG_FINANCEIRA_ARBITRAGEM_DEFAULT.fv_acoplado,
+  });
   const [priceScenarioId, setPriceScenarioId] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -68,6 +71,7 @@ function NovoProjetoArbitragemConteudo() {
         bess={bess}
         financeiro={financeiro}
         priceScenarioId={priceScenarioId}
+        segmento={segmento}
         onChangeBess={setBess}
         onChangeFinanceiro={setFinanceiro}
         onChangePriceScenarioId={setPriceScenarioId}

@@ -10,6 +10,7 @@ de deixar ler/escrever — não pule essa checagem em rotas novas.
 from __future__ import annotations
 
 import uuid
+from dataclasses import replace
 from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
@@ -100,6 +101,11 @@ def criar_projeto_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = D
     — ver POST /api/price-scenarios."""
     _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)  # 404/403 se não existir/não for do dono
 
+    # Autônomo (Utility) é necessariamente standalone — o FV+BESS foi substituído
+    # pelo modelo Colocalizado (geração real via UGC). Reforçado aqui, não só no
+    # frontend, pra não depender de ninguém não pular essa regra via chamada direta à API.
+    fv_acoplado_efetivo = payload.financeiro.fv_acoplado and payload.segmento != "utility"
+
     supabase = get_supabase()
     registro = {
         "id": str(uuid.uuid4()),
@@ -107,9 +113,9 @@ def criar_projeto_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = D
         "name": payload.nome or "Novo projeto de arbitragem",
         "seed": payload.seed,
         "segmento": payload.segmento,
-        "business_model": "arbitragem_fv_bess" if payload.financeiro.fv_acoplado else "arbitragem_standalone",
+        "business_model": "arbitragem_fv_bess" if fv_acoplado_efetivo else "arbitragem_standalone",
         "bess_config": payload.bess.model_dump(),
-        "financeiro_config": payload.financeiro.model_dump(),
+        "financeiro_config": {**payload.financeiro.model_dump(), "fv_acoplado": fv_acoplado_efetivo},
         "price_scenario_id": payload.price_scenario_id,
     }
     resp = supabase.table("projects").insert(registro).execute()
@@ -176,13 +182,15 @@ def atualizar_projeto_arbitragem(project_id: str, payload: SimulacaoArbitragemIn
         )
     _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)
 
+    fv_acoplado_efetivo = payload.financeiro.fv_acoplado and payload.segmento != "utility"
+
     supabase = get_supabase()
     resp = supabase.table("projects").update({
         "name": payload.nome or "Projeto sem nome",
         "seed": payload.seed,
-        "business_model": "arbitragem_fv_bess" if payload.financeiro.fv_acoplado else "arbitragem_standalone",
+        "business_model": "arbitragem_fv_bess" if fv_acoplado_efetivo else "arbitragem_standalone",
         "bess_config": payload.bess.model_dump(),
-        "financeiro_config": payload.financeiro.model_dump(),
+        "financeiro_config": {**payload.financeiro.model_dump(), "fv_acoplado": fv_acoplado_efetivo},
         "price_scenario_id": payload.price_scenario_id,
         "updated_at": "now()",
     }).eq("id", project_id).execute()
@@ -422,7 +430,10 @@ def simular_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = Depends
     price_scenario_id já existente."""
     cenario = _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)
     cfg = _para_cfg_bess(payload.bess)
+    # Autônomo (Utility) é necessariamente standalone — mesmo reforço de criar/atualizar_projeto_arbitragem
+    fv_acoplado_efetivo = payload.financeiro.fv_acoplado and payload.segmento != "utility"
     fin = _para_fin_arbitragem(payload.financeiro, cfg.prazo_anos)
+    fin = replace(fin, fv_acoplado=fv_acoplado_efetivo)
     return _rodar_simulacao_arbitragem_ou_erro_400(cfg, fin, cenario["precos_por_ano"], payload.seed)
 
 

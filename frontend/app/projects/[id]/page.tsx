@@ -160,14 +160,16 @@ export default function ProjetoPage() {
   }
 
   if (businessModel !== 'lrcap') {
+    const segmentoProjeto = (projetoBruto.segmento ?? 'utility') as Segmento;
     return (
-      <ProtectedLayout wide segmento={(projetoBruto.segmento ?? 'utility') as Segmento}>
+      <ProtectedLayout wide segmento={segmentoProjeto}>
         <ProjetoArbitragemView
           projectId={projectId}
           nomeInicial={projetoBruto.name}
           bessInicial={projetoBruto.bess_config}
           financeiroInicial={projetoBruto.financeiro_config}
           priceScenarioIdInicial={projetoBruto.price_scenario_id ?? ''}
+          segmento={segmentoProjeto}
         />
       </ProtectedLayout>
     );
