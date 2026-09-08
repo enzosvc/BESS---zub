@@ -134,7 +134,6 @@ export interface ConfigFinanceiraArbitragem {
   opex_fixo_pct_capex: number;
   custo_variavel_rs_mwh: number;
   preco_energia_perdas_rs_mwh: number;
-  custo_augmentation_rs_mwh: number;
   tarifa_tust_c_rs_kw_mes: number;
   tarifa_tust_g_rs_kw_mes: number;
   taxa_desconto_real: number;
@@ -176,7 +175,6 @@ export const CONFIG_FINANCEIRA_ARBITRAGEM_DEFAULT: ConfigFinanceiraArbitragem = 
   opex_fixo_pct_capex: 0.02,
   custo_variavel_rs_mwh: 0.0,
   preco_energia_perdas_rs_mwh: 0.0,
-  custo_augmentation_rs_mwh: 938_704,
   tarifa_tust_c_rs_kw_mes: 0.0,
   tarifa_tust_g_rs_kw_mes: 10.0,
   taxa_desconto_real: 0.1,
@@ -353,12 +351,6 @@ export const SECOES_FINANCEIRO_ARBITRAGEM: SecaoFormularioArbitragem[] = [
       { chave: 'opex_fixo_pct_capex', rotulo: 'OPEX fixo (% do CAPEX)', unidade: '%', step: 0.001, min: 0, max: 1 },
       { chave: 'custo_variavel_rs_mwh', rotulo: 'Custo variável', unidade: 'R$/MWh', step: 0.1 },
       { chave: 'preco_energia_perdas_rs_mwh', rotulo: 'Preço da energia de perdas', unidade: 'R$/MWh', step: 0.1 },
-    ],
-  },
-  {
-    titulo: 'Augmentation',
-    campos: [
-      { chave: 'custo_augmentation_rs_mwh', rotulo: 'Custo de augmentation', unidade: 'R$/MWh', step: 1000 },
     ],
   },
   {

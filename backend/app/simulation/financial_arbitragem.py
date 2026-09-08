@@ -17,6 +17,10 @@ válido se essa energia realmente seria perdida/curtailed sem o BESS. Se a FV
 tem PPA ou é vendida no mercado livre com valor positivo, o custo de carga
 real é esse valor perdido, não zero — trate o resultado FV+BESS como um
 limite superior (best case), não uma média esperada.
+
+SEM augmentation: ao contrário do LRCAP, não existe reinvestimento em
+capacidade ao longo dos 15 anos — decisão deliberada, ver docstring de
+lifecycle_arbitragem.py.
 """
 from __future__ import annotations
 
@@ -32,7 +36,6 @@ class ConfigFinanceiraArbitragem:
     opex_fixo_pct_capex: float
     custo_variavel_rs_mwh: float
     preco_energia_perdas_rs_mwh: float
-    custo_augmentation_rs_mwh: float
     tarifa_tust_c_rs_kw_mes: float
     tarifa_tust_g_rs_kw_mes: float
     taxa_desconto_real: float
@@ -97,10 +100,10 @@ def calcular_opex_fixo_capex_arbitragem(trajetoria: pd.DataFrame,
 
 
 def custos_operacionais_ano_arbitragem(row: pd.Series, fin: ConfigFinanceiraArbitragem) -> float:
-    """SEM custo_nao_atendimento — ver docstring do módulo."""
+    """SEM custo_nao_atendimento e SEM custo de augmentation — ver docstring do módulo."""
     custo_variavel = row.energia_vendida_mwh_ano * fin.custo_variavel_rs_mwh
     custo_perdas = row.perdas_mwh_ano * fin.preco_energia_perdas_rs_mwh
-    return fin.opex_fixo_capex_rs_ano + custo_variavel + custo_perdas + row.custo_augmentation_rs
+    return fin.opex_fixo_capex_rs_ano + custo_variavel + custo_perdas
 
 
 def montar_fluxo_caixa_arbitragem(trajetoria: pd.DataFrame, fin: ConfigFinanceiraArbitragem) -> np.ndarray:

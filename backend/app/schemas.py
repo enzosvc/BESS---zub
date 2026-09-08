@@ -114,18 +114,16 @@ class SimulacaoInput(BaseModel):
 
 class ConfigFinanceiraArbitragemInput(BaseModel):
     """Mesma família de ConfigFinanceiraInput, SEM custo_nao_atendimento_rs_mwh
-    (não existe compromisso contratual a penalizar) e COM `fv_acoplado`, que
-    decide se a energia de carga é gratuita (FV) ou comprada no PLD (standalone)."""
+    (não existe compromisso contratual a penalizar), SEM custo de augmentation
+    (não existe reinvestimento nesse modelo — ver lifecycle_arbitragem.py) e
+    COM `fv_acoplado`, que decide se a energia de carga é gratuita (FV) ou
+    comprada no PLD (standalone)."""
     capex_total_rs: float = Field(
         ..., ge=0, description="CAPEX total do projeto, em R$ (0 = equipamento já existente, sem novo investimento)"
     )
     opex_fixo_pct_capex: float = Field(0.02, ge=0, le=1)
     custo_variavel_rs_mwh: float = Field(0.0, ge=0)
     preco_energia_perdas_rs_mwh: float = Field(0.0, ge=0)
-    custo_augmentation_rs_mwh: float = Field(
-        ..., ge=0, description="Custo de repor 1 MWh de capacidade, R$/MWh (irrelevante se "
-                                "disponibilidade_comprometida_mwh=0, já que augmentation nunca dispara)"
-    )
     tarifa_tust_c_rs_kw_mes: float = Field(0.0, ge=0, description="R$/kW.mês")
     tarifa_tust_g_rs_kw_mes: float = Field(10.0, ge=0, description="R$/kW.mês")
     taxa_desconto_real: float = Field(0.10, gt=-1, description="WACC real")
