@@ -69,7 +69,7 @@ export default function ProtectedLayout({
               className="rounded-md px-3 py-1.5 text-sm font-medium font-mono transition-colors hover:!text-accent"
               style={{
                 color: emCei ? corTextoSegmento('cei') : '#9BA4C7',
-                backgroundColor: emCei ? '#5C3210' : 'transparent',
+                backgroundColor: emCei ? '#3D1526' : 'transparent',
               }}
             >
               C&amp;I
