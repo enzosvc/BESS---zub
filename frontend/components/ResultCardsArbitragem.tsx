@@ -40,7 +40,7 @@ export default function ResultCardsArbitragem({
   return (
     <div>
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-2">
-        Modelo: {modeloNegocio === 'arbitragem_fv_bess' ? 'Arbitragem FV + BESS' : 'Arbitragem Standalone'}
+        Modelo: {modeloNegocio === 'arbitragem_fv_bess' ? 'Autônomo FV + BESS' : modeloNegocio === 'colocalizado' ? 'Colocalizado' : 'Autônomo Standalone'}
       </p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Card titulo="VPL do projeto" valor={formatarReais(vplRs)} ruim={vplRs < 0} destaque={vplRs >= 0} />

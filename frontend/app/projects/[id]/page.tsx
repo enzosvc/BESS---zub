@@ -13,6 +13,7 @@ import TabelaTecnicaAnual from '@/components/TabelaTecnicaAnual';
 import TabelaSensibilidadeBid from '@/components/TabelaSensibilidadeBid';
 import BidTirChart from '@/components/charts/BidTirChart';
 import ProjetoArbitragemView from '@/components/ProjetoArbitragemView';
+import ProjetoColocalizadoView from '@/components/ProjetoColocalizadoView';
 import { ConfigBESS, ConfigFinanceira } from '@/lib/inputSchema';
 import { Segmento } from '@/lib/segmentTheme';
 import {
@@ -139,6 +140,21 @@ export default function ProjetoPage() {
     return (
       <ProtectedLayout>
         <p className="text-sm text-muted">Carregando projeto...</p>
+      </ProtectedLayout>
+    );
+  }
+
+  if (businessModel === 'colocalizado') {
+    return (
+      <ProtectedLayout wide segmento={(projetoBruto.segmento ?? 'utility') as Segmento}>
+        <ProjetoColocalizadoView
+          projectId={projectId}
+          nomeInicial={projetoBruto.name}
+          bessInicial={projetoBruto.bess_config}
+          financeiroInicial={projetoBruto.financeiro_config}
+          priceScenarioIdInicial={projetoBruto.price_scenario_id ?? ''}
+          ugcScenarioIdInicial={projetoBruto.ugc_scenario_id ?? ''}
+        />
       </ProtectedLayout>
     );
   }

@@ -206,6 +206,76 @@ class SimulacaoArbitragemInput(BaseModel):
         return v
 
 
+class GeracaoAnoInput(BaseModel):
+    ano: int = Field(..., gt=0, description="Ano SIMULADO do projeto (1, 2, 3...), não ano calendário")
+    geracao_mw: List[float] = Field(
+        ..., description="Geração horária (MW), múltiplo de 24h, em ordem cronológica"
+    )
+
+    @field_validator("geracao_mw")
+    @classmethod
+    def valida_tamanho_e_faixa(cls, v):
+        if len(v) == 0 or len(v) % 24 != 0:
+            raise ValueError(f"geracao_mw tem {len(v)} valores — precisa ser múltiplo de 24h (dias completos)")
+        fora_da_faixa = [p for p in v if p < 0 or p > 10_000]
+        if fora_da_faixa:
+            raise ValueError(
+                f"{len(fora_da_faixa)} valor(es) fora da faixa razoável (0–10.000 MW), "
+                f"ex.: {fora_da_faixa[0]}. Confira a unidade/formato do arquivo."
+            )
+        return v
+
+
+class UGCScenarioInput(BaseModel):
+    """UGC = Unidades de Geração e Consumo. Hoje só a curva de geração é usada
+    (pelo modelo Colocalizado); `consumo` fica reservado pra uso futuro em C&I."""
+    name: str = Field(..., description="Nome do UGC, ex.: 'Geração Usina Solar X 2023-2025'")
+    unidade: Optional[str] = Field(None, description="Nome livre da usina/planta")
+    fonte: Optional[str] = Field(None, description="Descrição livre da origem")
+    anos: List[GeracaoAnoInput] = Field(..., min_length=1)
+
+    @model_validator(mode="after")
+    def valida_completude_dos_anos(self):
+        """Mesma regra de price_scenarios: todo ano precisa ser completo
+        (8760/8784h), exceto o primeiro e o último da série."""
+        anos_ordenados = sorted(self.anos, key=lambda a: a.ano)
+        meio = anos_ordenados[1:-1] if len(anos_ordenados) > 2 else []
+        for item in meio:
+            n = len(item.geracao_mw)
+            if n not in (8760, 8784):
+                raise ValueError(
+                    f"Ano {item.ano} tem {n} horas — precisa ser exatamente 8760 ou 8784 "
+                    f"(ano completo). Só o PRIMEIRO e o ÚLTIMO ano da série podem ser parciais."
+                )
+        return self
+
+
+class SimulacaoColocalizadoInput(BaseModel):
+    """Modelo Colocalizado: a carga da bateria é limitada pela geração REAL da
+    usina (via UGC), hora a hora — não mais uma suposição de 'carga grátis nas
+    horas baratas do PLD' como no Autônomo com fv_acoplado. A descarga segue a
+    mesma lógica de preço do Autônomo (vende nas horas mais caras do dia)."""
+    nome: Optional[str] = Field(None, description="Nome do projeto/cenário, para salvar")
+    seed: int = Field(2026, description="Semente aleatória (reprodutibilidade)")
+    segmento: Literal["utility", "cei"] = Field("utility", description="Vertical de negócio do projeto")
+    bess: ConfigBESSInput
+    financeiro: ConfigFinanceiraArbitragemInput
+    price_scenario_id: str = Field(..., description="ID de um cenário de preço já salvo — usado pra decidir a descarga")
+    ugc_scenario_id: str = Field(..., description="ID de um UGC já salvo — usado pra decidir a carga (geração real da usina)")
+
+    @field_validator("bess")
+    @classmethod
+    def valida_bess_para_colocalizado(cls, v: ConfigBESSInput):
+        if v.delta_t_h != 1.0:
+            raise ValueError("Para colocalizado, delta_t_h precisa ser 1.0 (granularidade horária, igual ao PLD/UGC).")
+        if v.dias_simulados_por_ano != 365:
+            raise ValueError(
+                "Para colocalizado, dias_simulados_por_ano precisa ser 365 — o motor roda o ano "
+                "inteiro vindo dos cenários, sem extrapolação de um período menor."
+            )
+        return v
+
+
 class SimulacaoResultado(BaseModel):
     """Espelha o dict devolvido por `engine.rodar_simulacao_completa` — ver lá
     para a estrutura exata de cada campo (mantido como dict solto/`Any` aqui

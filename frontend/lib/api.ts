@@ -180,3 +180,71 @@ export async function excluirPriceScenario(scenarioId: string) {
   });
   return tratarResposta(resp);
 }
+
+// =============================================================================
+// Modelo de negócio: COLOCALIZADO (BESS que carrega com a geração real da usina)
+// =============================================================================
+
+export async function criarProjetoColocalizado(payload: unknown) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/projects/colocalizado`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return tratarResposta(resp);
+}
+
+export async function atualizarProjetoColocalizado(projectId: string, payload: unknown) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/projects/${projectId}/colocalizado`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return tratarResposta(resp);
+}
+
+/** Simulação ad-hoc do modelo colocalizado (não salva projeto). */
+export async function simularColocalizado(payload: unknown) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/simulate-colocalizado`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return tratarResposta(resp);
+}
+
+/** UGC (Unidades de Geração e Consumo) — curva de geração real de uma usina,
+ * usada pelo modelo Colocalizado (mesma mecânica de Cenários de preço). */
+export async function criarUGCScenario(payload: unknown) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/ugc-scenarios`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
+  return tratarResposta(resp);
+}
+
+export async function listarUGCScenarios() {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/ugc-scenarios`, { headers });
+  return tratarResposta(resp);
+}
+
+export async function obterUGCScenario(scenarioId: string) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/ugc-scenarios/${scenarioId}`, { headers });
+  return tratarResposta(resp);
+}
+
+export async function excluirUGCScenario(scenarioId: string) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/ugc-scenarios/${scenarioId}`, {
+    method: 'DELETE',
+    headers,
+  });
+  return tratarResposta(resp);
+}

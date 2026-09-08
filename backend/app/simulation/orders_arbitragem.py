@@ -10,20 +10,20 @@ função recebe o ANO CALENDÁRIO INTEIRO de preços e devolve o ANO INTEIRO de
 ordens (sem extrapolação: `simular_ano_arbitragem` roda o ano cheio).
 
 Estratégia de despacho: foresight perfeito (decisão de screening, não uma
-heurística operacional realista) — em cada dia, carrega nas D horas mais
-baratas e descarrega nas D horas mais caras do MESMO dia, onde
-D = round(1 / cfg.c_rate) horas (a duração nominal do BESS). Essa é a mesma
-lógica usada na análise de potencial teórico (planilha/HTML de screening);
-aqui ela vira o motor de despacho ano a ano, encaixado no mesmo laço físico
-(SOC, eficiência, perdas) que o modelo LRCAP usa.
+heurística operacional realista). Carga: nas D horas mais baratas do dia,
+onde D = round(1 / cfg.c_rate) horas (a duração nominal do BESS) — sempre
+até a capacidade cheia, já que o Autônomo não depende de nenhuma fonte de
+geração específica. Descarga: alocador de preço (despacho_precos.py) que
+extrai o máximo valor das horas mais caras do dia pra energia disponível —
+que aqui é sempre igual à energia carregada (D × potência), já que o
+Autônomo sempre carrega cheio.
 
 Acoplamento com FV: esta função NÃO muda o formato do despacho (a decisão de
-quais horas carregar/descarregar continua vindo do preço, como proxy de
-"quando a energia está mais barata/abundante" — tipicamente as horas de sol).
-O que muda com FV é só a parte financeira (financial_arbitragem.py): a
-energia de carga passa a ter custo de oportunidade ~R$0 em vez do PLD da
-hora. Ver a ressalva sobre essa simplificação no docstring de
-`financial_arbitragem.py`.
+quais horas carregar continua vindo do preço, como proxy de "quando a
+energia está mais barata/abundante" — tipicamente as horas de sol). O que
+muda com FV é só a parte financeira (financial_arbitragem.py): a energia de
+carga passa a ter custo de oportunidade ~R$0 em vez do PLD da hora. Ver a
+ressalva sobre essa simplificação no docstring de `financial_arbitragem.py`.
 """
 from __future__ import annotations
 
@@ -31,6 +31,7 @@ import numpy as np
 import pandas as pd
 
 from .config import ConfigBESSDetalhado
+from .despacho_precos import alocar_descarga_por_preco
 
 
 def criar_ordens_arbitragem(cfg: ConfigBESSDetalhado, precos_ano: pd.DataFrame) -> pd.DataFrame:
@@ -79,14 +80,28 @@ def criar_ordens_arbitragem(cfg: ConfigBESSDetalhado, precos_ano: pd.DataFrame) 
         precos_dia = grupo['preco_rs_mwh'].to_numpy()
 
         ordem_precos = np.argsort(precos_dia)  # crescente: baratas primeiro
-        idx_carga = idx_dia[ordem_precos[:duracao_h]]
-        idx_descarga = idx_dia[ordem_precos[-duracao_h:]]
+        indices_carga = ordem_precos[:duracao_h]
+        idx_carga = idx_dia[indices_carga]
 
         ordem[idx_carga] = -potencia_mw
         tipo[idx_carga] = 'carga_arbitragem'
         ciclo_id[idx_carga] = ciclo_num
 
-        ordem[idx_descarga] = potencia_mw
+        # descarga: waterfall por preço, restrito às horas NÃO usadas pra carga (senão,
+        # em dias de preço achatado — comuns em 2022-2024 — os dois argsorts poderiam
+        # escolher as mesmas horas por causa de empates, descarregando mais do que foi
+        # carregado). Energia-alvo = o que foi carregado (D × potência, já que o Autônomo
+        # sempre carrega cheio) — com carga cheia isso dá exatamente as mesmas D horas
+        # mais caras à potência plena de antes, sem mudar nenhum número.
+        indices_disponiveis_descarga = np.setdiff1d(np.arange(len(idx_dia)), indices_carga, assume_unique=True)
+        precos_disponiveis = precos_dia[indices_disponiveis_descarga]
+        energia_para_descarga_mwh = duracao_h * potencia_mw
+        alocacao_parcial = alocar_descarga_por_preco(precos_disponiveis, energia_para_descarga_mwh, potencia_mw)
+
+        mascara_parcial = alocacao_parcial > 0
+        idx_descarga = idx_dia[indices_disponiveis_descarga[mascara_parcial]]
+
+        ordem[idx_descarga] = alocacao_parcial[mascara_parcial]
         tipo[idx_descarga] = 'descarga_arbitragem'
         ciclo_id[idx_descarga] = ciclo_num
 

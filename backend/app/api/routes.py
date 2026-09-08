@@ -19,17 +19,21 @@ from ..db import get_supabase
 from ..schemas import (
     ConfigBESSInput, ConfigFinanceiraInput, SimulacaoInput,
     ConfigFinanceiraArbitragemInput, SimulacaoArbitragemInput, PriceScenarioInput,
+    UGCScenarioInput, SimulacaoColocalizadoInput,
 )
 from ..simulation.config import ConfigBESSDetalhado, ConfigFinanceiraDetalhada
 from ..simulation.engine import rodar_simulacao_completa
 from ..simulation.financial_arbitragem import ConfigFinanceiraArbitragem
 from ..simulation.engine_arbitragem import rodar_simulacao_arbitragem
+from ..simulation.engine_colocalizado import rodar_simulacao_colocalizado
 from ..simulation.price_scenario import construir_precos_por_ano, resumo_cenario, CenarioPrecoInvalido
+from ..simulation.ugc_scenario import construir_geracao_por_ano, resumo_ugc, UGCInvalido
 from ..jobs.sensitivity_worker import rodar_job_sensibilidade
 
 router = APIRouter(prefix="/api")
 
 BUSINESS_MODELS_ARBITRAGEM = ("arbitragem_standalone", "arbitragem_fv_bess")
+BUSINESS_MODELS_PRECO = ("arbitragem_standalone", "arbitragem_fv_bess", "colocalizado")
 
 
 # ---------------------------------------------------------------------------
@@ -112,6 +116,30 @@ def criar_projeto_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = D
     return resp.data[0]
 
 
+@router.post("/projects/colocalizado", status_code=status.HTTP_201_CREATED)
+def criar_projeto_colocalizado(payload: SimulacaoColocalizadoInput, user_id: str = Depends(obter_usuario_atual)):
+    """Cria um projeto do modelo Colocalizado. Requer um price_scenario_id
+    (pra descarga) e um ugc_scenario_id (pra carga) já existentes."""
+    _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)
+    _buscar_ugc_scenario_do_usuario(payload.ugc_scenario_id, user_id)
+
+    supabase = get_supabase()
+    registro = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "name": payload.nome or "Novo projeto colocalizado",
+        "seed": payload.seed,
+        "segmento": payload.segmento,
+        "business_model": "colocalizado",
+        "bess_config": payload.bess.model_dump(),
+        "financeiro_config": payload.financeiro.model_dump(),
+        "price_scenario_id": payload.price_scenario_id,
+        "ugc_scenario_id": payload.ugc_scenario_id,
+    }
+    resp = supabase.table("projects").insert(registro).execute()
+    return resp.data[0]
+
+
 @router.get("/projects/{project_id}")
 def obter_projeto(project_id: str, user_id: str = Depends(obter_usuario_atual)):
     projeto = _buscar_projeto_do_usuario(project_id, user_id)
@@ -144,7 +172,7 @@ def atualizar_projeto_arbitragem(project_id: str, payload: SimulacaoArbitragemIn
     if projeto["business_model"] not in BUSINESS_MODELS_ARBITRAGEM:
         raise HTTPException(
             status.HTTP_400_BAD_REQUEST,
-            "Esse projeto é LRCAP — use PUT /api/projects/{project_id}.",
+            "Esse projeto não é arbitragem Autônomo — use a rota certa pro modelo dele.",
         )
     _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)
 
@@ -156,6 +184,31 @@ def atualizar_projeto_arbitragem(project_id: str, payload: SimulacaoArbitragemIn
         "bess_config": payload.bess.model_dump(),
         "financeiro_config": payload.financeiro.model_dump(),
         "price_scenario_id": payload.price_scenario_id,
+        "updated_at": "now()",
+    }).eq("id", project_id).execute()
+    return resp.data[0]
+
+
+@router.put("/projects/{project_id}/colocalizado")
+def atualizar_projeto_colocalizado(project_id: str, payload: SimulacaoColocalizadoInput,
+                                    user_id: str = Depends(obter_usuario_atual)):
+    projeto = _buscar_projeto_do_usuario(project_id, user_id)
+    if projeto["business_model"] != "colocalizado":
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Esse projeto não é Colocalizado — use a rota certa pro modelo dele.",
+        )
+    _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)
+    _buscar_ugc_scenario_do_usuario(payload.ugc_scenario_id, user_id)
+
+    supabase = get_supabase()
+    resp = supabase.table("projects").update({
+        "name": payload.nome or "Projeto sem nome",
+        "seed": payload.seed,
+        "bess_config": payload.bess.model_dump(),
+        "financeiro_config": payload.financeiro.model_dump(),
+        "price_scenario_id": payload.price_scenario_id,
+        "ugc_scenario_id": payload.ugc_scenario_id,
         "updated_at": "now()",
     }).eq("id", project_id).execute()
     return resp.data[0]
@@ -273,6 +326,86 @@ def _rodar_simulacao_arbitragem_ou_erro_400(cfg: ConfigBESSDetalhado, fin: Confi
 
 
 # ---------------------------------------------------------------------------
+# UGC — Unidades de Geração e Consumo (usadas pelo modelo Colocalizado)
+# ---------------------------------------------------------------------------
+
+@router.post("/ugc-scenarios", status_code=status.HTTP_201_CREATED)
+def criar_ugc_scenario(payload: UGCScenarioInput, user_id: str = Depends(obter_usuario_atual)):
+    geracao_por_ano_raw = {str(item.ano): item.geracao_mw for item in payload.anos}
+    supabase = get_supabase()
+    registro = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "name": payload.name,
+        "unidade": payload.unidade,
+        "fonte": payload.fonte,
+        "geracao_por_ano": geracao_por_ano_raw,
+    }
+    resp = supabase.table("ugc_scenarios").insert(registro).execute()
+    salvo = resp.data[0]
+    return {**salvo, "resumo": resumo_ugc(geracao_por_ano_raw)}
+
+
+@router.get("/ugc-scenarios")
+def listar_ugc_scenarios(user_id: str = Depends(obter_usuario_atual)):
+    supabase = get_supabase()
+    resp = (
+        supabase.table("ugc_scenarios")
+        .select("id, name, unidade, fonte, created_at, geracao_por_ano")
+        .eq("user_id", user_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    saida = []
+    for row in resp.data:
+        geracao = row.pop("geracao_por_ano")
+        row["resumo"] = resumo_ugc(geracao)
+        saida.append(row)
+    return saida
+
+
+@router.get("/ugc-scenarios/{scenario_id}")
+def obter_ugc_scenario(scenario_id: str, user_id: str = Depends(obter_usuario_atual)):
+    ugc = _buscar_ugc_scenario_do_usuario(scenario_id, user_id)
+    return {**ugc, "resumo": resumo_ugc(ugc["geracao_por_ano"])}
+
+
+@router.delete("/ugc-scenarios/{scenario_id}", status_code=status.HTTP_204_NO_CONTENT)
+def excluir_ugc_scenario(scenario_id: str, user_id: str = Depends(obter_usuario_atual)):
+    _buscar_ugc_scenario_do_usuario(scenario_id, user_id)
+    supabase = get_supabase()
+    try:
+        supabase.table("ugc_scenarios").delete().eq("id", scenario_id).execute()
+    except Exception as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Esse UGC está em uso por pelo menos um projeto e não pode ser excluído.",
+        ) from exc
+
+
+def _buscar_ugc_scenario_do_usuario(scenario_id: str, user_id: str) -> dict:
+    supabase = get_supabase()
+    resp = supabase.table("ugc_scenarios").select("*").eq("id", scenario_id).execute()
+    if not resp.data:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "UGC não encontrado.")
+    ugc = resp.data[0]
+    if ugc["user_id"] != user_id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Esse UGC não pertence a você.")
+    return ugc
+
+
+def _rodar_simulacao_colocalizado_ou_erro_400(cfg: ConfigBESSDetalhado, fin: ConfigFinanceiraArbitragem,
+                                               precos_por_ano_raw: dict, geracao_por_ano_raw: dict,
+                                               seed: int) -> dict:
+    try:
+        cenario_precos_por_ano = construir_precos_por_ano(precos_por_ano_raw, cfg.prazo_anos)
+        cenario_geracao_por_ano = construir_geracao_por_ano(geracao_por_ano_raw, cfg.prazo_anos)
+        return rodar_simulacao_colocalizado(cfg, fin, cenario_precos_por_ano, cenario_geracao_por_ano, seed=seed)
+    except (ValueError, CenarioPrecoInvalido, UGCInvalido) as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+
+# ---------------------------------------------------------------------------
 # Simulação síncrona (rápida — roda direto na requisição, ~1-2s)
 # ---------------------------------------------------------------------------
 
@@ -291,6 +424,19 @@ def simular_arbitragem(payload: SimulacaoArbitragemInput, user_id: str = Depends
     cfg = _para_cfg_bess(payload.bess)
     fin = _para_fin_arbitragem(payload.financeiro, cfg.prazo_anos)
     return _rodar_simulacao_arbitragem_ou_erro_400(cfg, fin, cenario["precos_por_ano"], payload.seed)
+
+
+@router.post("/simulate-colocalizado")
+def simular_colocalizado(payload: SimulacaoColocalizadoInput, user_id: str = Depends(obter_usuario_atual)):
+    """Simulação ad-hoc (não salva projeto) do modelo Colocalizado — usa um
+    price_scenario_id (descarga) e um ugc_scenario_id (carga) já existentes."""
+    cenario_preco = _buscar_price_scenario_do_usuario(payload.price_scenario_id, user_id)
+    cenario_ugc = _buscar_ugc_scenario_do_usuario(payload.ugc_scenario_id, user_id)
+    cfg = _para_cfg_bess(payload.bess)
+    fin = _para_fin_arbitragem(payload.financeiro, cfg.prazo_anos)
+    return _rodar_simulacao_colocalizado_ou_erro_400(
+        cfg, fin, cenario_preco["precos_por_ano"], cenario_ugc["geracao_por_ano"], payload.seed
+    )
 
 
 @router.get("/projects/{project_id}/latest-result")
@@ -327,6 +473,18 @@ def simular_projeto_salvo(project_id: str, background_tasks: BackgroundTasks,
         cfg = _para_cfg_bess(cfg_input)
         fin = _para_fin(fin_input, cfg.capacidade_nominal_mwh)
         resultado = _rodar_simulacao_ou_erro_400(cfg, fin, projeto["seed"])
+    elif projeto["business_model"] == "colocalizado":
+        if not projeto.get("price_scenario_id") or not projeto.get("ugc_scenario_id"):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Projeto colocalizado sem cenário de preço e/ou UGC associado.")
+        cenario_preco = _buscar_price_scenario_do_usuario(projeto["price_scenario_id"], user_id)
+        cenario_ugc = _buscar_ugc_scenario_do_usuario(projeto["ugc_scenario_id"], user_id)
+        cfg_input = ConfigBESSInput(**projeto["bess_config"])
+        fin_input = ConfigFinanceiraArbitragemInput(**projeto["financeiro_config"])
+        cfg = _para_cfg_bess(cfg_input)
+        fin = _para_fin_arbitragem(fin_input, cfg.prazo_anos)
+        resultado = _rodar_simulacao_colocalizado_ou_erro_400(
+            cfg, fin, cenario_preco["precos_por_ano"], cenario_ugc["geracao_por_ano"], projeto["seed"]
+        )
     else:
         if not projeto.get("price_scenario_id"):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Projeto de arbitragem sem price_scenario_id associado.")

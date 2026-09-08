@@ -13,15 +13,16 @@ interface Projeto {
   business_model: string;
 }
 
-const ROTULO_MODELO: Record<string, string> = {
-  lrcap: 'LRCAP',
-  arbitragem_standalone: 'Arbitragem',
-  arbitragem_fv_bess: 'Arbitragem FV+BESS',
-};
+function rotuloModelo(modelo: string, segmento: Segmento): string {
+  if (modelo === 'lrcap') return 'LRCAP';
+  if (modelo === 'colocalizado') return 'Colocalizado';
+  const rotuloBase = segmento === 'utility' ? 'Autônomo' : 'Arbitragem';
+  return modelo === 'arbitragem_fv_bess' ? `${rotuloBase} FV+BESS` : rotuloBase;
+}
 
-function BadgeModelo({ modelo }: { modelo: string }) {
+function BadgeModelo({ modelo, segmento }: { modelo: string; segmento: Segmento }) {
   const cor = modelo === 'lrcap' ? 'bg-panel-2 text-muted' : 'bg-panel-2 text-accent';
-  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${cor}`}>{ROTULO_MODELO[modelo] ?? modelo}</span>;
+  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${cor}`}>{rotuloModelo(modelo, segmento)}</span>;
 }
 
 export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
@@ -55,7 +56,7 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
     }
   }
 
-  const rotuloArbitragem = segmento === 'utility' ? '+ Autônomo / Colocalizado' : '+ Arbitragem';
+  const rotuloArbitragem = segmento === 'utility' ? '+ Autônomo' : '+ Arbitragem';
 
   return (
     <ProtectedLayout segmento={segmento}>
@@ -76,6 +77,14 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
           >
             {rotuloArbitragem}
           </Link>
+          {segmento === 'utility' && (
+            <Link
+              href={`/projects/new-colocalizado?segmento=${segmento}`}
+              className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-on-accent hover:opacity-90"
+            >
+              + Colocalizado
+            </Link>
+          )}
         </div>
       </div>
 
@@ -87,10 +96,16 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
           Nenhum projeto de {ROTULO_SEGMENTO[segmento]} ainda. Clique em{' '}
           {segmento === 'utility' && (
             <>
-              <strong>+ LRCAP</strong> ou{' '}
+              <strong>+ LRCAP</strong>,{' '}
             </>
           )}
-          <strong>{rotuloArbitragem}</strong> pra começar.
+          <strong>{rotuloArbitragem}</strong>
+          {segmento === 'utility' && (
+            <>
+              {' '}ou <strong>+ Colocalizado</strong>
+            </>
+          )}{' '}
+          pra começar.
         </div>
       )}
 
@@ -105,7 +120,7 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
                 <Link href={`/projects/${p.id}`} className="font-medium text-ink hover:text-accent">
                   {p.name}
                 </Link>
-                <BadgeModelo modelo={p.business_model} />
+                <BadgeModelo modelo={p.business_model} segmento={segmento} />
               </div>
               <p className="text-xs text-muted-2">Atualizado em {new Date(p.updated_at).toLocaleString('pt-BR')}</p>
             </div>

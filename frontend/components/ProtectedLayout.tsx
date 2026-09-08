@@ -30,6 +30,7 @@ export default function ProtectedLayout({
   const emUtility = pathname?.startsWith('/utility');
   const emCei = pathname?.startsWith('/cei');
   const emPrecos = pathname?.startsWith('/price-scenarios');
+  const emUgc = pathname?.startsWith('/ugc');
 
   useEffect(() => {
     if (!carregando && !session) router.replace('/login');
@@ -83,6 +84,16 @@ export default function ProtectedLayout({
               }}
             >
               Cenários de preço
+            </Link>
+            <Link
+              href="/ugc"
+              className="rounded-md px-3 py-1.5 text-sm font-medium font-mono transition-colors hover:!text-accent"
+              style={{
+                color: emUgc ? '#47D73D' : '#9BA4C7',
+                backgroundColor: emUgc ? '#123B12' : 'transparent',
+              }}
+            >
+              UGC
             </Link>
           </div>
           <div className="flex items-center gap-4 font-mono text-sm text-muted">
