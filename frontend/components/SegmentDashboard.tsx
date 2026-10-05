@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ProtectedLayout from '@/components/ProtectedLayout';
 import { listarProjetos, excluirProjeto } from '@/lib/api';
-import { Segmento, ROTULO_SEGMENTO } from '@/lib/segmentTheme';
+import { Segmento, ROTULO_SEGMENTO, rotuloModeloNegocio } from '@/lib/segmentTheme';
 
 interface Projeto {
   id: string;
@@ -13,16 +13,9 @@ interface Projeto {
   business_model: string;
 }
 
-function rotuloModelo(modelo: string, segmento: Segmento): string {
-  if (modelo === 'lrcap') return 'LRCAP';
-  if (modelo === 'colocalizado') return 'Colocalizado';
-  const rotuloBase = segmento === 'utility' ? 'Autônomo' : 'Arbitragem';
-  return modelo === 'arbitragem_fv_bess' ? `${rotuloBase} FV+BESS` : rotuloBase;
-}
-
 function BadgeModelo({ modelo, segmento }: { modelo: string; segmento: Segmento }) {
   const cor = modelo === 'lrcap' ? 'bg-panel-2 text-muted' : 'bg-panel-2 text-accent';
-  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${cor}`}>{rotuloModelo(modelo, segmento)}</span>;
+  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${cor}`}>{rotuloModeloNegocio(modelo, segmento)}</span>;
 }
 
 export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
@@ -63,6 +56,12 @@ export default function SegmentDashboard({ segmento }: { segmento: Segmento }) {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-ink">Meus projetos — {ROTULO_SEGMENTO[segmento]}</h1>
         <div className="flex gap-2">
+          <Link
+            href={`/${segmento}/comparar`}
+            className="rounded-md border border-line bg-panel px-4 py-2 text-sm font-medium text-ink hover:bg-panel-2"
+          >
+            Comparar projetos
+          </Link>
           {segmento === 'utility' && (
             <Link
               href={`/projects/new?segmento=${segmento}`}

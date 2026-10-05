@@ -248,3 +248,21 @@ export async function excluirUGCScenario(scenarioId: string) {
   });
   return tratarResposta(resp);
 }
+
+// =============================================================================
+// Comparação de projetos (só leitura, sobre a última simulação salva de cada um)
+// =============================================================================
+
+/** Projetos do segmento com o resumo da última simulação (null se nunca rodou). */
+export async function listarCandidatosComparacao(segmento: string) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/comparacao/candidatos?segmento=${encodeURIComponent(segmento)}`, { headers });
+  return tratarResposta(resp);
+}
+
+/** Resultados completos (sem o perfil de despacho) dos projetos selecionados. */
+export async function obterComparacao(ids: string[]) {
+  const headers = await authHeaders();
+  const resp = await fetch(`${API_URL}/api/comparacao?ids=${ids.map(encodeURIComponent).join(',')}`, { headers });
+  return tratarResposta(resp);
+}
