@@ -36,7 +36,7 @@ Artefatos de upload: **Cenários de preço** (PLD por ano, colunas Data/Hora/Sub
 
 ## Estado atual e próximos passos
 
-Atualizado em 2026-10-05. Comparação de projetos implementada na branch `claude/gracious-mendel-t1nh6o` (aguarda revisão/merge do Enzo).
+Atualizado em 2026-10-05. Toda a seção reflete a `main` (comparação de projetos já incorporada); não há trabalho em andamento em outra branch.
 
 Pendente:
 - [ ] **Motor de otimização do sizing** (modo "Otimizar"), seguindo as regras de sizing acima. Hoje só existe o toggle `frontend/components/DimensionamentoToggle.tsx`, que bloqueia salvar em modo Otimizar. Mudança grande: discutir o desenho antes de implementar.
