@@ -31,8 +31,15 @@ Artefatos de upload: **Cenários de preço** (PLD por ano, colunas Data/Hora/Sub
 - Despacho por preço usa alocação **waterfall** (`despacho_precos.py`): descarga nas horas mais caras do mesmo dia da carga, potência ajustada para aproveitar o máximo das horas caras, mesmo com carga parcial. Vale para Utility (exceto LRCAP) e C&I.
 - Autônomo (Utility) é **necessariamente standalone**: regra aplicada no frontend (sem toggle FV+BESS) **e** no backend (`fv_acoplado_efetivo = fv_acoplado and segmento != "utility"`).
 - Augmentation foi **removido** de Autônomo/Colocalizado (manual e otimizado): não há compromisso externo que justifique gatilho de reinvestimento. Só o LRCAP tem augmentation.
-- Sizing da bateria como saída (modo "Otimizar"): variável de busca única = `capacidade_nominal_mwh`; C-rate é input fixo; CAPEX/OPEX em R$/MWh; SOC fixo no código; sem penalidade de disponibilidade. Métrica VPL ou TIR (VPL é o correto para dimensionar; TIR serve para comparar/limiar — podem divergir muito). **O motor de otimização ainda não existe**: só há o toggle `DimensionamentoToggle.tsx`, que bloqueia salvar em modo Otimizar.
-- Simplificações do formulário técnico de Autônomo/Colocalizado (remover "Dimensionamento e C-rate", "Janela Operacional SOC", "Disponibilidade") foram discutidas, mas **ainda não implementadas**; aguardar confirmação.
+- Sizing da bateria como saída (modo "Otimizar"): variável de busca única = `capacidade_nominal_mwh`; C-rate é input fixo; CAPEX/OPEX em R$/MWh; SOC fixo no código; sem penalidade de disponibilidade. Métrica VPL ou TIR (VPL é o correto para dimensionar; TIR serve para comparar/limiar — podem divergir muito).
+
+## Estado atual e próximos passos
+
+Atualizado em 2026-10-05. Toda a seção reflete a `main`; não há trabalho em andamento em outra branch.
+
+Pendente:
+- [ ] **Motor de otimização do sizing** (modo "Otimizar"), seguindo as regras de sizing acima. Hoje só existe o toggle `frontend/components/DimensionamentoToggle.tsx`, que bloqueia salvar em modo Otimizar. Mudança grande: discutir o desenho antes de implementar.
+- [ ] **Simplificar o formulário técnico de Autônomo/Colocalizado**: remover "Dimensionamento e C-rate", "Janela Operacional SOC" e "Disponibilidade". Já foi discutido, mas **aguarda confirmação do Enzo**.
 
 ## Regras de trabalho
 
@@ -47,6 +54,7 @@ Artefatos de upload: **Cenários de preço** (PLD por ano, colunas Data/Hora/Sub
    - Frontend: `npx tsc --noEmit --noUnusedLocals --noUnusedParameters` e `npm run build`.
 8. Mudança de schema do Supabase: atualize `supabase/schema.sql` **e** entregue ao Enzo o SQL incremental e idempotente para rodar no SQL Editor. Se não houver mudança de schema, diga explicitamente.
 9. Antes de dar push, rode `git fetch origin main` e confirme que a branch local está em dia.
+10. **Continuidade entre sessões:** o trabalho é retomado em sessões novas, que só conhecem este arquivo. Ao fim de cada sessão (ou antes de uma pausa), atualize "Estado atual e próximos passos" no mesmo commit do trabalho: o que foi concluído (remova o item), o que ficou em andamento (com a branch) e o que vem a seguir. Decisões novas vão para "Regras de negócio já decididas".
 
 ## Comandos úteis
 
