@@ -52,3 +52,12 @@ export function corBordaSegmento(segmento: Segmento): string {
 export function corFundoSegmento(segmento: Segmento): string {
   return CORES_SEGMENTO[segmento].fundo;
 }
+
+/** Rótulo do modelo de negócio como o usuário vê — Autônomo (Utility) e
+ * Arbitragem (C&I) usam o mesmo `business_model` no banco. */
+export function rotuloModeloNegocio(modelo: string, segmento: string): string {
+  if (modelo === 'lrcap') return 'LRCAP';
+  if (modelo === 'colocalizado') return 'Colocalizado';
+  const rotuloBase = segmento === 'utility' ? 'Autônomo' : 'Arbitragem';
+  return modelo === 'arbitragem_fv_bess' ? `${rotuloBase} FV+BESS` : rotuloBase;
+}
