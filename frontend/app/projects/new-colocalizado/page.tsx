@@ -63,18 +63,28 @@ function NovoProjetoColocalizadoConteudo() {
   const podeSalvar = modoDimensionamento === 'manual' && !salvando;
 
   return (
-    <ProtectedLayout segmento={segmento}>
-      <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-2">
-        Novo projeto Colocalizado — {ROTULO_SEGMENTO[segmento]}
-      </p>
-      <div className="mb-6">
-        <label className="mb-1 block text-xs font-medium text-muted">Nome do projeto</label>
-        <input
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className="w-full max-w-md rounded-md border border-line bg-panel-2 text-ink px-3 py-2 text-sm focus:border-accent focus:outline-none"
-        />
+    <ProtectedLayout wide segmento={segmento}>
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-2">
+            Novo projeto Colocalizado — {ROTULO_SEGMENTO[segmento]}
+          </p>
+          <input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            aria-label="Nome do projeto"
+            className="w-full max-w-md rounded-md border border-line bg-panel-2 px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+          />
+        </div>
+        <button
+          onClick={handleSalvar}
+          disabled={!podeSalvar}
+          className="rounded-md bg-accent px-5 py-2 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50"
+        >
+          {salvando ? 'Salvando...' : 'Salvar e abrir projeto'}
+        </button>
       </div>
+      {erro && <p className="mb-3 text-sm text-bad">{erro}</p>}
 
       <InputFormColocalizado
         bess={bess}
@@ -88,23 +98,6 @@ function NovoProjetoColocalizadoConteudo() {
         modoDimensionamento={modoDimensionamento}
         onChangeModoDimensionamento={setModoDimensionamento}
       />
-
-      {erro && <p className="mt-4 text-sm text-bad">{erro}</p>}
-      {modoDimensionamento === 'otimizar' && (
-        <p className="mt-4 text-sm text-warn">
-          O modo "Otimizar tamanho" ainda não roda — troque para "Definir manualmente" pra salvar e simular.
-        </p>
-      )}
-
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={handleSalvar}
-          disabled={!podeSalvar}
-          className="rounded-md bg-accent px-5 py-2 text-sm font-medium text-on-accent hover:opacity-90 disabled:opacity-50"
-        >
-          {salvando ? 'Salvando...' : 'Salvar e abrir projeto'}
-        </button>
-      </div>
     </ProtectedLayout>
   );
 }

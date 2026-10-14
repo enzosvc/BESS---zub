@@ -2,72 +2,67 @@
 
 export type ModoDimensionamento = 'manual' | 'otimizar';
 
-interface Props {
+/** Seletor compacto Manual / Otimizar (cabe na faixa de contexto do formulário). */
+export function SeletorDimensionamento({
+  modo, onChangeModo,
+}: {
   modo: ModoDimensionamento;
   onChangeModo: (modo: ModoDimensionamento) => void;
-  metricaAlvo: 'vpl' | 'tir';
-  onChangeMetricaAlvo: (m: 'vpl' | 'tir') => void;
+}) {
+  const opcoes: { valor: ModoDimensionamento; rotulo: string }[] = [
+    { valor: 'manual', rotulo: 'Definir manualmente' },
+    { valor: 'otimizar', rotulo: 'Otimizar tamanho' },
+  ];
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-medium text-muted">Dimensionamento</p>
+      <div className="flex gap-0.5 rounded-full border border-line bg-panel p-0.5">
+        {opcoes.map((o) => (
+          <button
+            key={o.valor}
+            type="button"
+            onClick={() => onChangeModo(o.valor)}
+            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              modo === o.valor ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'
+            }`}
+          >
+            {o.rotulo}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /**
  * Só a interface do modo "o modelo decide o tamanho ideal" — o motor de
- * otimização (que precisaria rodar a simulação de 15 anos dezenas/centenas
- * de vezes, testando combinações de potência/capacidade até maximizar a
- * métrica escolhida) ainda NÃO existe. Por isso, com modo='otimizar', o
- * formulário mostra os campos de configuração da busca mas BLOQUEIA o botão
- * de salvar — nada é enviado pro backend nesse modo ainda.
+ * otimização (que precisaria rodar a simulação dezenas/centenas de vezes até
+ * maximizar a métrica escolhida) ainda NÃO existe. Por isso, com
+ * modo='otimizar', a página bloqueia o botão de salvar.
  */
-export default function DimensionamentoToggle({ modo, onChangeModo, metricaAlvo, onChangeMetricaAlvo }: Props) {
+export function AvisoOtimizar({
+  metricaAlvo, onChangeMetricaAlvo,
+}: {
+  metricaAlvo: 'vpl' | 'tir';
+  onChangeMetricaAlvo: (m: 'vpl' | 'tir') => void;
+}) {
   return (
-    <div className="rounded-lg border border-line bg-panel p-4">
-      <div className="mb-3 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-ink">Dimensionamento do BESS</p>
-          <p className="text-xs text-muted">Definir potência/capacidade você mesmo, ou pedir pro modelo calcular o tamanho ideal.</p>
-        </div>
-        <div className="flex gap-1 rounded-full border border-line bg-panel-2 p-1">
-          <button
-            type="button"
-            onClick={() => onChangeModo('manual')}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              modo === 'manual' ? 'bg-accent text-on-accent' : 'text-muted'
-            }`}
-          >
-            Definir manualmente
-          </button>
-          <button
-            type="button"
-            onClick={() => onChangeModo('otimizar')}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              modo === 'otimizar' ? 'bg-accent text-on-accent' : 'text-muted'
-            }`}
-          >
-            Otimizar tamanho
-          </button>
-        </div>
-      </div>
-
-      {modo === 'otimizar' && (
-        <div className="space-y-3 border-t border-line pt-3">
-          <div className="rounded-md border border-warn/40 bg-panel-2 p-3 text-xs text-warn">
-            Em construção — o motor que testa várias combinações de potência/capacidade e escolhe a
-            melhor ainda não roda. Por enquanto, escolha <strong>Definir manualmente</strong> pra
-            simular. Os campos abaixo já ficam salvos como preferência, prontos pra quando o motor
-            existir.
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted">Maximizar</label>
-            <select
-              value={metricaAlvo}
-              onChange={(e) => onChangeMetricaAlvo(e.target.value as 'vpl' | 'tir')}
-              className="w-full max-w-xs rounded-md border border-line bg-panel-2 px-3 py-1.5 text-sm text-ink focus:border-accent focus:outline-none"
-            >
-              <option value="tir">TIR</option>
-              <option value="vpl">VPL</option>
-            </select>
-          </div>
-        </div>
-      )}
+    <div className="flex flex-wrap items-center gap-4 rounded-lg border border-warn/40 bg-panel-2 px-3 py-2.5 text-xs text-warn">
+      <p className="min-w-[16rem] flex-1">
+        Em construção — o motor que testa vários tamanhos e escolhe o melhor ainda não roda. Escolha{' '}
+        <strong>Definir manualmente</strong> para simular. A métrica abaixo ainda não é salva no projeto.
+      </p>
+      <label className="flex items-center gap-2 text-muted">
+        Maximizar
+        <select
+          value={metricaAlvo}
+          onChange={(e) => onChangeMetricaAlvo(e.target.value as 'vpl' | 'tir')}
+          className="rounded-md border border-line bg-panel px-2 py-1 text-xs text-ink focus:border-accent focus:outline-none"
+        >
+          <option value="tir">TIR</option>
+          <option value="vpl">VPL</option>
+        </select>
+      </label>
     </div>
   );
 }

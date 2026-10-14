@@ -33,24 +33,19 @@ function NovoProjetoConteudo() {
   }
 
   return (
-    <ProtectedLayout segmento={segmento}>
-      <p className="mb-4 text-xs font-medium uppercase tracking-wide text-muted-2">
-        Novo projeto LRCAP — {ROTULO_SEGMENTO[segmento]}
-      </p>
-      <div className="mb-6">
-        <label className="mb-1 block text-xs font-medium text-muted">Nome do projeto</label>
-        <input
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          className="w-full max-w-md rounded-md border border-line bg-panel-2 text-ink px-3 py-2 text-sm focus:border-accent focus:outline-none"
-        />
-      </div>
-
-      <InputForm bess={bess} financeiro={financeiro} onChangeBess={setBess} onChangeFinanceiro={setFinanceiro} />
-
-      {erro && <p className="mt-4 text-sm text-bad">{erro}</p>}
-
-      <div className="mt-6 flex justify-end">
+    <ProtectedLayout wide segmento={segmento}>
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-2">
+            Novo projeto LRCAP — {ROTULO_SEGMENTO[segmento]}
+          </p>
+          <input
+            value={nome}
+            onChange={(e) => setNome(e.target.value)}
+            aria-label="Nome do projeto"
+            className="w-full max-w-md rounded-md border border-line bg-panel-2 px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
+          />
+        </div>
         <button
           onClick={handleSalvar}
           disabled={salvando}
@@ -59,6 +54,9 @@ function NovoProjetoConteudo() {
           {salvando ? 'Salvando...' : 'Salvar e abrir projeto'}
         </button>
       </div>
+      {erro && <p className="mb-3 text-sm text-bad">{erro}</p>}
+
+      <InputForm bess={bess} financeiro={financeiro} onChangeBess={setBess} onChangeFinanceiro={setFinanceiro} />
     </ProtectedLayout>
   );
 }

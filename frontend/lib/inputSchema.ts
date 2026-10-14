@@ -322,11 +322,8 @@ export const SECOES_FINANCEIRO: SecaoFormulario[] = [
 // Seções de formulário para ARBITRAGEM
 // =============================================================================
 
-// Mesmas seções de física do BESS, MENOS "Janelas de carga e descarga" — o
-// despacho vem do preço (ver orders_arbitragem.py), não de horários fixos.
-export const SECOES_BESS_ARBITRAGEM: SecaoFormulario[] = SECOES_BESS.filter(
-  (secao) => secao.titulo !== 'Janelas de carga e descarga'
-);
+// As seções técnicas usadas por cada modelo ficam em
+// components/parametros/GradeParametros.tsx (LAYOUT_LRCAP / LAYOUT_PRECO).
 
 export interface CampoMetaArbitragem {
   chave: keyof ConfigFinanceiraArbitragem;
